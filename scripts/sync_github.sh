@@ -29,7 +29,7 @@ fi
 
 git add -A
 
-if [[ -n "$(git status --porcelain)" ]]; then
+if ! git diff --cached --quiet; then
   git commit -m "$commit_message"
 fi
 
