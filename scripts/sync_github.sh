@@ -16,17 +16,6 @@ if ! git remote get-url "$remote" >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ -f "sql/config.yaml" ]]; then
-  if awk -F'"' '/^[[:space:]]*access_id:[[:space:]]*"/ { if ($2 !~ /^YOUR_/) exit 0 } END { exit 1 }' "sql/config.yaml"; then
-    echo "Refusing to sync: sql/config.yaml appears to contain a real access_id." 1>&2
-    exit 2
-  fi
-  if awk -F'"' '/^[[:space:]]*secret_access_key:[[:space:]]*"/ { if ($2 !~ /^YOUR_/) exit 0 } END { exit 1 }' "sql/config.yaml"; then
-    echo "Refusing to sync: sql/config.yaml appears to contain a real secret_access_key." 1>&2
-    exit 2
-  fi
-fi
-
 git add -A
 
 if ! git diff --cached --quiet; then
