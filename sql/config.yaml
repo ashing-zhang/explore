@@ -1,5 +1,0 @@
-odps:
-  access_id: "YOUR_ODPS_ACCESS_ID"
-  secret_access_key: "YOUR_ODPS_SECRET_ACCESS_KEY"
-  project: "YOUR_ODPS_PROJECT"
-  endpoint: "https://service.cn-shenzhen.maxcompute.aliyun.com/api"
