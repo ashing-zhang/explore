@@ -1,0 +1,48 @@
+logging:
+  level: INFO
+
+env:
+  initial_inventory: 100
+  cost_price: 300
+  selling_window: 60
+  base_demand: 20
+
+  seasonality_factor:
+    min: 0.5
+    max: 2.0
+
+  event_factor:
+    min: 1.0
+    max: 3.0
+
+  price_elasticity:
+    min: 1.0
+    max: 3.0
+
+  holding_penalty_alpha: 0.2
+  booking_alpha: 6.0
+  booking_gamma: 0.03
+  max_price_multiplier: 2.0
+  max_profit_ratio_cap: 5.0
+  hotel_close_prob: 0.0
+  competitor_initial_price: 500.0
+  competitor_target_sales: 5.0
+  expiration_penalty_weight: 1.0
+
+ppo:
+  total_timesteps: 200000
+  n_steps: 2048
+  batch_size: 64
+  gamma: 0.99
+  learning_rate: 0.0003
+
+sac:
+  total_timesteps: 300000
+  batch_size: 256
+  gamma: 0.99
+  learning_rate: 0.0003
+  buffer_size: 100000
+
+evaluation:
+  episodes: 20
+  seed: 7
