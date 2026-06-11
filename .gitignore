@@ -1,2 +1,6 @@
 # Ignore local SQL assets/configs
 /sql/
+
+# Node dependencies
+node_modules/
+**/node_modules/
