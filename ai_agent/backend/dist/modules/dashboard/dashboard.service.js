@@ -146,6 +146,13 @@ let DashboardService = class DashboardService {
             const key = toIsoDate(d);
             countsByDate.set(key, (countsByDate.get(key) ?? 0) + 1);
         }
+        const pickMockInt24 = (seed) => {
+            let h = 0;
+            for (let i = 0; i < seed.length; i += 1) {
+                h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+            }
+            return 2 + (h % 3);
+        };
         const dates = [];
         const thisYear = [];
         const lastYear = [];
@@ -153,9 +160,12 @@ let DashboardService = class DashboardService {
             const d = addDays(start, i);
             const key = toIsoDate(d);
             dates.push(key);
-            const v = countsByDate.get(key) ?? Math.max(0, Math.round(3 + Math.sin(i / 3) * 2));
+            const actual = countsByDate.get(key);
+            const v = actual !== undefined && actual >= 2 ? actual : pickMockInt24(`orderTrend:thisYear:${key}:${i}`);
+            const ly = actual !== undefined && actual >= 2
+                ? Math.max(0, Math.round(v * (0.7 + ((i % 5) / 20))))
+                : pickMockInt24(`orderTrend:lastYear:${key}:${i}`);
             thisYear.push(v);
-            const ly = Math.max(0, Math.round(v * (0.7 + ((i % 5) / 20))));
             lastYear.push(ly);
         }
         return { dates, thisYear, lastYear };
