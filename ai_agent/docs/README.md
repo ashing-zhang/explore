@@ -105,3 +105,29 @@ Backend 相关环境变量：
 - `PORT`（默认：`3001`）
 - `CORS_ORIGIN`（默认：允许所有来源）
 
+---
+
+## 6. 使用 Docker 同时启动 Backend + Frontend
+
+在 `ai_agent` 目录下使用 Docker Compose 一键启动：
+
+```bash
+cd ai_agent
+docker compose up --build
+```
+
+启动后访问：
+
+- Frontend：`http://localhost:3000`
+- Backend：`http://localhost:3001/api`
+
+Docker Compose 默认配置：
+
+- Backend：`DATA_PROVIDER=mock`，并暴露 `3001:3001`
+- Frontend：通过 `NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api` 访问后端，并暴露 `3000:3000`
+
+相关配置文件位置：
+
+- `ai_agent/docker-compose.yml`
+- `ai_agent/backend/Dockerfile`
+- `ai_agent/frontend/Dockerfile`
