@@ -62,7 +62,7 @@ export default function Home() {
               type="date"
               className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
               value={dataDate}
-              onChange={(e) => setDataDate(e.target.value)}
+              onChange={(e) => setDataDate(e.target.value)} // 用户修改日期时，更新 dataDate 状态，触发重新请求
             />
           </div>
 
