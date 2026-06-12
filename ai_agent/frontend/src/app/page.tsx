@@ -26,24 +26,24 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let alive = true;
+    let alive = true; // 状态隔离标记（竞态锁），防止组件卸载或连续快速切换日期导致的数据错乱
     setLoading(true);
     setError(null);
     fetchDashboardOverview({ dataDate })
       .then((res) => {
-        if (!alive) return;
+        if (!alive) return; // 如果在请求完成前，用户又切换了日期或者离开了页面，则丢弃该次结果
         setOverview(res);
       })
       .catch((e: unknown) => {
         if (!alive) return;
-        setError(e instanceof Error ? e.message : String(e));
+        setError(e instanceof Error ? e.message : String(e)); // 规范化错误信息
       })
       .finally(() => {
         if (!alive) return;
         setLoading(false);
       });
     return () => {
-      alive = false;
+      alive = false;  // 清理函数：当 dataDate 改变重新触发 effect，或者组件销毁时，将上一次的 alive 设为 false
     };
   }, [dataDate]);
 
