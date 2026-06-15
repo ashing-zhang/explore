@@ -11,6 +11,17 @@ function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+function addDays(d: Date, days: number): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function daysBetween(a: Date, b: Date): number {
+  const ms = b.getTime() - a.getTime();
+  return Math.round(ms / (24 * 60 * 60 * 1000));
+}
+
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
@@ -60,12 +71,20 @@ export class MockDataProvider {
 
   async getHistoricalOrders(req: RecommendationRequest): Promise<HistoricalOrder[]> {
     const now = req.targetDate ? new Date(req.targetDate) : new Date();
+    const checkInStart = req.startDate ? new Date(req.startDate) : null;
+    const checkInEnd = req.endDate ? new Date(req.endDate) : null;
+    const hasCheckInRange =
+      !!checkInStart && !!checkInEnd && checkInStart.getTime() <= checkInEnd.getTime();
+    const checkInRangeDays = hasCheckInRange
+      ? Math.max(1, daysBetween(checkInStart, checkInEnd) + 1)
+      : 0;
     const orders: HistoricalOrder[] = [];
     for (let i = 0; i < 40; i += 1) {
       const createdAt = new Date(now);
       createdAt.setDate(createdAt.getDate() - (i + 1));
-      const checkInDate = new Date(createdAt);
-      checkInDate.setDate(checkInDate.getDate() + 7 + (i % 9));
+      const checkInDate = hasCheckInRange
+        ? addDays(checkInStart, i % checkInRangeDays)
+        : addDays(createdAt, 7 + (i % 9));
       const paidPrice = 620 + (i % 7) * 25 + Math.round(Math.sin(i / 4) * 12);
       orders.push({
         orderId: `MOCK-${createdAt.getTime()}-${i}`,
@@ -89,4 +108,3 @@ export class MockDataProvider {
     return generateSeries(snapshotDate, 30, 679, 45, 1.0);
   }
 }
-

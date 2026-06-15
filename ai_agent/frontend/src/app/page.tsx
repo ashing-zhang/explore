@@ -20,7 +20,9 @@ function rangeText(range: DashboardOverviewResponse['packageDateRange']): string
 }
 
 export default function Home() {
-  const [dataDate, setDataDate] = useState<string>(todayIso());
+  const dataDate = todayIso();
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,19 @@ export default function Home() {
     let alive = true; // 状态隔离标记（竞态锁），防止组件卸载或连续快速切换日期导致的数据错乱
     setLoading(true);
     setError(null);
-    fetchDashboardOverview({ dataDate })
+    if (startDate && endDate && startDate > endDate) {
+      setLoading(false);
+      setError('开始日期不能晚于结束日期');
+      return () => {
+        alive = false;
+      };
+    }
+
+    fetchDashboardOverview({
+      dataDate,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    })
       .then((res) => {
         if (!alive) return; // 如果在请求完成前，用户又切换了日期或者离开了页面，则丢弃该次结果
         setOverview(res);
@@ -45,7 +59,7 @@ export default function Home() {
     return () => {
       alive = false;  // 清理函数：当 dataDate 改变重新触发 effect，或者组件销毁时，将上一次的 alive 设为 false
     };
-  }, [dataDate]);
+  }, [startDate, endDate]);
 
   return (
     <div className="flex min-h-dvh bg-zinc-50">
@@ -56,13 +70,20 @@ export default function Home() {
             <TopBar dataDate={overview?.dataDate ?? dataDate} />
           </div>
 
-          <div className="mt-4 flex items-center justify-end gap-3">
-            <div className="text-sm text-zinc-600">数据日期</div>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+            <div className="text-sm text-zinc-600">入住开始日期</div>
             <input
               type="date"
               className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
-              value={dataDate}
-              onChange={(e) => setDataDate(e.target.value)} // 用户修改日期时，更新 dataDate 状态，触发重新请求
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <div className="text-sm text-zinc-600">入住结束日期</div>
+            <input
+              type="date"
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
             />
           </div>
 

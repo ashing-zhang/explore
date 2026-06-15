@@ -57,4 +57,6 @@ export type AgentOutputs = {
 
 export type RecommendationRequest = {
   targetDate?: string;
+  startDate?: string;
+  endDate?: string;
 };

@@ -68,7 +68,11 @@ export class DashboardService {
     const rangeDays = Math.max(1, daysBetween(start, end) + 1);
     const daysToCheckIn = Math.max(0, daysBetween(dataDate, start));
 
-    const inputs = await this.agent.buildInputs({ targetDate: toIsoDate(dataDate) });
+    const inputs = await this.agent.buildInputs({
+      targetDate: toIsoDate(dataDate),
+      startDate: toIsoDate(start),
+      endDate: toIsoDate(end),
+    });
     const rec = await this.agent.recommend({ targetDate: toIsoDate(dataDate) });
 
     const totalInventory = inputs.inventory_status.packageTotal;
@@ -79,14 +83,14 @@ export class DashboardService {
     const marketHeatDelta = clamp(Math.round((rec.confidence - 0.6) * 10), -3, 3);
 
     const orderTrend = this.buildOrderTrend({
-      dataDate,
+      startDate: start,
+      endDate: end,
       ordersCreatedAt: inputs.historical_orders.map((o) => o.createdAt),
-      days: 15,
     });
 
     const otaPriceTrend = this.buildOtaPriceTrend({
-      dataDate,
-      days: 15,
+      startDate: start,
+      endDate: end,
       hotelSeries: inputs.market_snapshot.otaPriceSeries,
     });
 
@@ -146,12 +150,12 @@ export class DashboardService {
   }
 
   private buildOrderTrend(params: {
-    dataDate: Date;
+    startDate: Date;
+    endDate: Date;
     ordersCreatedAt: string[];
-    days: number;
   }): DashboardOverviewResponse['charts']['orderTrend'] {
-    const end = params.dataDate;
-    const start = addDays(end, -(params.days - 1));
+    const start = params.startDate;
+    const days = Math.max(1, daysBetween(params.startDate, params.endDate) + 1);
     const countsByDate = new Map<string, number>();
     for (const ts of params.ordersCreatedAt) {
       const d = new Date(ts);
@@ -170,7 +174,7 @@ export class DashboardService {
     const dates: string[] = [];
     const thisYear: number[] = [];
     const lastYear: number[] = [];
-    for (let i = 0; i < params.days; i += 1) {
+    for (let i = 0; i < days; i += 1) {
       const d = addDays(start, i);
       const key = toIsoDate(d);
       dates.push(key);
@@ -188,12 +192,12 @@ export class DashboardService {
   }
 
   private buildOtaPriceTrend(params: {
-    dataDate: Date;
-    days: number;
+    startDate: Date;
+    endDate: Date;
     hotelSeries: { date: string; price: number }[];
   }): DashboardOverviewResponse['charts']['otaPriceTrend'] {
-    const end = params.dataDate;
-    const start = addDays(end, -(params.days - 1));
+    const start = params.startDate;
+    const days = Math.max(1, daysBetween(params.startDate, params.endDate) + 1);
     const hotelMap = new Map(params.hotelSeries.map((p) => [p.date, p.price] as const));
 
     const dates: string[] = [];
@@ -202,7 +206,7 @@ export class DashboardService {
     const lastYear: number[] = [];
 
     const base = avg(params.hotelSeries.slice(-7).map((p) => p.price)) || 650;
-    for (let i = 0; i < params.days; i += 1) {
+    for (let i = 0; i < days; i += 1) {
       const d = addDays(start, i);
       const key = toIsoDate(d);
       dates.push(key);
