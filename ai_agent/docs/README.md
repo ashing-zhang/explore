@@ -131,3 +131,13 @@ Docker Compose 默认配置：
 - `ai_agent/docker-compose.yml`
 - `ai_agent/backend/Dockerfile`
 - `ai_agent/frontend/Dockerfile`
+
+如果修改了 `docker-compose.yml` 中的环境变量（例如 `DATA_PROVIDER`），可先停止当前容器编排，再重新启动：
+
+```bash
+cd ai_agent
+docker compose down
+docker compose up -d
+```
+
+这样可以确保新的环境变量配置重新注入到容器中并生效。

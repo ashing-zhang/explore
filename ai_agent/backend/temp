@@ -1,0 +1,1 @@
+从buildOrderTrend函数的实现逻辑来看，即便是使用真实值countsByDate，其数据来源也不是真实业务值（比例来源于postgresql等数据库）。请修改buildOrderTrend函数中获取真实

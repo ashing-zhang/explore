@@ -1,5 +1,6 @@
 # Ignore local SQL assets/configs
 /sql/
+/ai_agent/backend/sql/
 
 # Node dependencies
 node_modules/
