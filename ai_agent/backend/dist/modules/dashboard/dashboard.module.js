@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const agent_module_1 = require("../agent/agent.module");
 const dashboard_controller_1 = require("./dashboard.controller");
 const dashboard_service_1 = require("./dashboard.service");
+const dashboard_pages_service_1 = require("./dashboard-pages.service");
 let DashboardModule = class DashboardModule {
 };
 exports.DashboardModule = DashboardModule;
@@ -18,7 +19,7 @@ exports.DashboardModule = DashboardModule = __decorate([
     (0, common_1.Module)({
         imports: [agent_module_1.AgentModule],
         controllers: [dashboard_controller_1.DashboardController],
-        providers: [dashboard_service_1.DashboardService],
+        providers: [dashboard_service_1.DashboardService, dashboard_pages_service_1.DashboardPagesService],
     })
 ], DashboardModule);
 //# sourceMappingURL=dashboard.module.js.map

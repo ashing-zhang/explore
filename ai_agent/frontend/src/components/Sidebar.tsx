@@ -1,14 +1,13 @@
 'use client';
 
+import Link from 'next/link';
+
 const navItems = [
-  { key: 'dashboard', label: '概览看板' },
-  { key: 'calendar', label: '库存日历' },
-  { key: 'pricing', label: '价格建议' },
-  { key: 'orders', label: '订单分析' },
-  { key: 'market', label: '市场监控' },
-  { key: 'strategy', label: '策略建议' },
-  { key: 'execution', label: '执行记录' },
-  { key: 'data', label: '数据管理' },
+  { key: 'dashboard', label: '概览看板', href: '/' },
+  { key: 'orders', label: '订单分析', href: '/orders' },
+  { key: 'market', label: '市场监控', href: '/market' },
+  { key: 'strategy', label: '策略建议', href: '/strategy' },
+  { key: 'execution', label: '执行记录', href: '/execution' },
 ] as const;
 
 export function Sidebar({ activeKey }: { activeKey: (typeof navItems)[number]['key'] }) {
@@ -31,16 +30,20 @@ export function Sidebar({ activeKey }: { activeKey: (typeof navItems)[number]['k
           {navItems.map((it) => {
             const active = it.key === activeKey;
             return (
-              <div
+              <Link
                 key={it.key}
+                href={it.href}
+                aria-current={active ? 'page' : undefined}
                 className={[
-                  'flex cursor-default items-center gap-3 rounded-xl px-3 py-2 text-sm',
-                  active ? 'bg-blue-500/20 text-white' : 'text-white/80 hover:bg-white/5',
+                  'flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition',
+                  active
+                    ? 'bg-blue-500/20 text-white'
+                    : 'text-white/80 hover:bg-white/5 hover:text-white',
                 ].join(' ')}
               >
                 <div className={['h-2.5 w-2.5 rounded-full', active ? 'bg-blue-300' : 'bg-white/30'].join(' ')} />
                 <div>{it.label}</div>
-              </div>
+              </Link>
             );
           })}
         </div>

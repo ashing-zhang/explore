@@ -15,13 +15,48 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardController = void 0;
 const common_1 = require("@nestjs/common");
 const dashboard_service_1 = require("./dashboard.service");
+const dashboard_pages_service_1 = require("./dashboard-pages.service");
 let DashboardController = class DashboardController {
     dashboard;
-    constructor(dashboard) {
+    pages;
+    constructor(dashboard, pages) {
         this.dashboard = dashboard;
+        this.pages = pages;
     }
     getOverview(dataDate, startDate, endDate, hid) {
         return this.dashboard.getOverview({ dataDate, startDate, endDate, hid });
+    }
+    getOrders(dataDate, startDate, endDate, page, pageSize) {
+        const p = page ? Number(page) : undefined;
+        const ps = pageSize ? Number(pageSize) : undefined;
+        return this.pages.getOrders({
+            dataDate,
+            startDate,
+            endDate,
+            page: Number.isFinite(p) ? p : undefined,
+            pageSize: Number.isFinite(ps) ? ps : undefined,
+        });
+    }
+    getMarket(dataDate, startDate, endDate) {
+        return this.pages.getMarket({ dataDate, startDate, endDate });
+    }
+    getStrategy(dataDate, page, pageSize) {
+        const p = page ? Number(page) : undefined;
+        const ps = pageSize ? Number(pageSize) : undefined;
+        return this.pages.getStrategy({
+            dataDate,
+            page: Number.isFinite(p) ? p : undefined,
+            pageSize: Number.isFinite(ps) ? ps : undefined,
+        });
+    }
+    getExecution(dataDate, page, pageSize) {
+        const p = page ? Number(page) : undefined;
+        const ps = pageSize ? Number(pageSize) : undefined;
+        return this.pages.getExecution({
+            dataDate,
+            page: Number.isFinite(p) ? p : undefined,
+            pageSize: Number.isFinite(ps) ? ps : undefined,
+        });
     }
 };
 exports.DashboardController = DashboardController;
@@ -35,8 +70,47 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], DashboardController.prototype, "getOverview", null);
+__decorate([
+    (0, common_1.Get)('orders'),
+    __param(0, (0, common_1.Query)('dataDate')),
+    __param(1, (0, common_1.Query)('startDate')),
+    __param(2, (0, common_1.Query)('endDate')),
+    __param(3, (0, common_1.Query)('page')),
+    __param(4, (0, common_1.Query)('pageSize')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
+    __metadata("design:returntype", void 0)
+], DashboardController.prototype, "getOrders", null);
+__decorate([
+    (0, common_1.Get)('market'),
+    __param(0, (0, common_1.Query)('dataDate')),
+    __param(1, (0, common_1.Query)('startDate')),
+    __param(2, (0, common_1.Query)('endDate')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], DashboardController.prototype, "getMarket", null);
+__decorate([
+    (0, common_1.Get)('strategy'),
+    __param(0, (0, common_1.Query)('dataDate')),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('pageSize')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], DashboardController.prototype, "getStrategy", null);
+__decorate([
+    (0, common_1.Get)('execution'),
+    __param(0, (0, common_1.Query)('dataDate')),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('pageSize')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], DashboardController.prototype, "getExecution", null);
 exports.DashboardController = DashboardController = __decorate([
     (0, common_1.Controller)('dashboard'),
-    __metadata("design:paramtypes", [dashboard_service_1.DashboardService])
+    __metadata("design:paramtypes", [dashboard_service_1.DashboardService,
+        dashboard_pages_service_1.DashboardPagesService])
 ], DashboardController);
 //# sourceMappingURL=dashboard.controller.js.map
