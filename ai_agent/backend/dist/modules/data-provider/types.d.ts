@@ -24,8 +24,6 @@ export type HistoricalOrder = {
     createdAt: string;
     checkInDate: string;
     nights: number;
-    paidPrice: number;
-    channel: 'OTA' | 'DIRECT';
 };
 export type AgentInputs = {
     market_snapshot: MarketSnapshot;
@@ -45,4 +43,7 @@ export type AgentOutputs = {
 };
 export type RecommendationRequest = {
     targetDate?: string;
+    startDate?: string;
+    endDate?: string;
+    hid?: string;
 };

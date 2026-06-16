@@ -10,13 +10,13 @@ exports.DataProviderModule = void 0;
 const common_1 = require("@nestjs/common");
 const data_provider_service_1 = require("./data-provider.service");
 const mock_data_provider_1 = require("./providers/mock-data-provider");
-const postgres_data_provider_1 = require("./providers/postgres-data-provider");
+const odps_data_provider_1 = require("./providers/odps-data-provider");
 let DataProviderModule = class DataProviderModule {
 };
 exports.DataProviderModule = DataProviderModule;
 exports.DataProviderModule = DataProviderModule = __decorate([
     (0, common_1.Module)({
-        providers: [data_provider_service_1.DataProviderService, mock_data_provider_1.MockDataProvider, postgres_data_provider_1.PostgresDataProvider],
+        providers: [data_provider_service_1.DataProviderService, mock_data_provider_1.MockDataProvider, odps_data_provider_1.OdpsDataProvider],
         exports: [data_provider_service_1.DataProviderService],
     })
 ], DataProviderModule);

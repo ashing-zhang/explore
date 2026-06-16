@@ -85,14 +85,11 @@ export class MockDataProvider {
       const checkInDate = hasCheckInRange
         ? addDays(checkInStart, i % checkInRangeDays)
         : addDays(createdAt, 7 + (i % 9));
-      const paidPrice = 620 + (i % 7) * 25 + Math.round(Math.sin(i / 4) * 12);
       orders.push({
         orderId: `MOCK-${createdAt.getTime()}-${i}`,
         createdAt: createdAt.toISOString(),
         checkInDate: toIsoDate(checkInDate),
         nights: (i % 3) + 1,
-        paidPrice,
-        channel: i % 4 === 0 ? 'DIRECT' : 'OTA',
       });
     }
     return orders;

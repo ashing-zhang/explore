@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   HistoricalOrder,
   MarketSnapshot,
@@ -22,11 +23,12 @@ export class DataProviderService implements DataProvider {
   private readonly provider: DataProvider;
 
   constructor(
+    private readonly config: ConfigService,
     private readonly mockDataProvider: MockDataProvider,
     private readonly odpsDataProvider: OdpsDataProvider,
   ) {
-    const kind = (process.env.DATA_PROVIDER?.toLowerCase() as DataProviderKind) ??
-      'mock';
+    const raw = this.config.get<string>('DATA_PROVIDER');
+    const kind = (raw?.toLowerCase() as DataProviderKind) ?? 'mock';
     this.provider = kind === 'odps' ? odpsDataProvider : mockDataProvider;
   }
 

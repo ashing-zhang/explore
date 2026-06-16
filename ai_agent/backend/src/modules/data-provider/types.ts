@@ -28,8 +28,6 @@ export type HistoricalOrder = {
   createdAt: string;
   checkInDate: string;
   nights: number;
-  paidPrice: number;
-  channel: 'OTA' | 'DIRECT';
 };
 
 export type AgentInputs = {
@@ -46,11 +44,11 @@ export type AgentOutputs = {
   inventory_risk: InventoryRisk;
   recommended_price: number;
   recommended_strategy:
-    | 'HOLD'
-    | 'PARTIAL_SELL'
-    | 'AGGRESSIVE_SELL'
-    | 'PRICE_UP'
-    | 'PRICE_DOWN';
+  | 'HOLD'
+  | 'PARTIAL_SELL'
+  | 'AGGRESSIVE_SELL'
+  | 'PRICE_UP'
+  | 'PRICE_DOWN';
   confidence: number;
   reasoning: string[];
 };

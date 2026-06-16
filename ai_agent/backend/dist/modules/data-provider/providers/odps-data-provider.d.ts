@@ -1,0 +1,35 @@
+import { HistoricalOrder, MarketSnapshot, PricePoint, RecommendationRequest } from '../types';
+export declare class OdpsDataProvider {
+    private parseCsvLine;
+    private loadSqlTemplate;
+    private renderTemplate;
+    private requireOdpsConfig;
+    private canonicalizeOdpsHeaders;
+    private canonicalizeResource;
+    private signOdpsRequest;
+    private buildCanonicalStr;
+    private signOdpsRequestV2;
+    private odpsRegion;
+    private signOdpsRequestV4;
+    private odpsFetch;
+    private extractXmlTag;
+    private extractSqlResultTextFromInstanceXml;
+    private submitSql;
+    private extractXmlTagAll;
+    private tryDetectTaskFailure;
+    private waitInstanceSuccess;
+    private parseOrderComparisonResult;
+    private fetchSqlResult;
+    private odpsConfig;
+    private targetDate;
+    private seedBase;
+    private hash32;
+    private pickInt;
+    private addDays;
+    private daysBetween;
+    private buildDateSeries;
+    getMarketSnapshot(req: RecommendationRequest): Promise<MarketSnapshot>;
+    getHistoricalOrders(req: RecommendationRequest): Promise<HistoricalOrder[]>;
+    getHistoricalPrices(req: RecommendationRequest): Promise<PricePoint[]>;
+    getCompetitorPrices(req: RecommendationRequest): Promise<PricePoint[]>;
+}

@@ -7,6 +7,7 @@ export declare class DashboardService {
         dataDate?: string;
         startDate?: string;
         endDate?: string;
+        hid?: string;
     }): Promise<DashboardOverviewResponse>;
     private buildOrderTrend;
     private buildOtaPriceTrend;

@@ -68,21 +68,31 @@ let DashboardService = class DashboardService {
             : addDays(start, 15);
         const rangeDays = Math.max(1, daysBetween(start, end) + 1);
         const daysToCheckIn = Math.max(0, daysBetween(dataDate, start));
-        const inputs = await this.agent.buildInputs({ targetDate: toIsoDate(dataDate) });
-        const rec = await this.agent.recommend({ targetDate: toIsoDate(dataDate) });
+        const inputs = await this.agent.buildInputs({
+            targetDate: toIsoDate(dataDate),
+            startDate: toIsoDate(start),
+            endDate: toIsoDate(end),
+            hid: params.hid,
+        });
+        const rec = await this.agent.recommend({
+            targetDate: toIsoDate(dataDate),
+            startDate: toIsoDate(start),
+            endDate: toIsoDate(end),
+            hid: params.hid,
+        });
         const totalInventory = inputs.inventory_status.packageTotal;
         const soldInventory = inputs.inventory_status.packageSold;
         const remainingInventory = inputs.inventory_status.packageRemaining;
         const marketHeatText = mapMarketHeatText(rec.market_status);
         const marketHeatDelta = clamp(Math.round((rec.confidence - 0.6) * 10), -3, 3);
         const orderTrend = this.buildOrderTrend({
-            dataDate,
-            ordersCreatedAt: inputs.historical_orders.map((o) => o.createdAt),
-            days: 15,
+            startDate: start,
+            endDate: end,
+            orders: inputs.historical_orders,
         });
         const otaPriceTrend = this.buildOtaPriceTrend({
-            dataDate,
-            days: 15,
+            startDate: start,
+            endDate: end,
             hotelSeries: inputs.market_snapshot.otaPriceSeries,
         });
         const inventoryCalendar = this.buildInventoryCalendar({
@@ -138,48 +148,45 @@ let DashboardService = class DashboardService {
         };
     }
     buildOrderTrend(params) {
-        const end = params.dataDate;
-        const start = addDays(end, -(params.days - 1));
-        const countsByDate = new Map();
-        for (const ts of params.ordersCreatedAt) {
-            const d = new Date(ts);
-            const key = toIsoDate(d);
-            countsByDate.set(key, (countsByDate.get(key) ?? 0) + 1);
+        const start = params.startDate;
+        const days = Math.max(1, daysBetween(params.startDate, params.endDate) + 1);
+        const roomNightsByCheckInDate = new Map();
+        for (const o of params.orders) {
+            const key = o.checkInDate;
+            roomNightsByCheckInDate.set(key, (roomNightsByCheckInDate.get(key) ?? 0) + o.nights);
         }
-        const pickMockInt24 = (seed) => {
-            let h = 0;
-            for (let i = 0; i < seed.length; i += 1) {
-                h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-            }
-            return 2 + (h % 3);
+        const shiftByYears = (isoDate, deltaYears) => {
+            const d = new Date(`${isoDate}T00:00:00.000Z`);
+            if (!Number.isFinite(d.getTime()))
+                return isoDate;
+            d.setUTCFullYear(d.getUTCFullYear() + deltaYears);
+            return toIsoDate(d);
         };
         const dates = [];
         const thisYear = [];
         const lastYear = [];
-        for (let i = 0; i < params.days; i += 1) {
+        for (let i = 0; i < days; i += 1) {
             const d = addDays(start, i);
             const key = toIsoDate(d);
             dates.push(key);
-            const actual = countsByDate.get(key);
-            const v = actual !== undefined && actual >= 2 ? actual : pickMockInt24(`orderTrend:thisYear:${key}:${i}`);
-            const ly = actual !== undefined && actual >= 2
-                ? Math.max(0, Math.round(v * (0.7 + ((i % 5) / 20))))
-                : pickMockInt24(`orderTrend:lastYear:${key}:${i}`);
+            const v = roomNightsByCheckInDate.get(key) ?? 0;
+            const lyKey = shiftByYears(key, -1);
+            const ly = roomNightsByCheckInDate.get(lyKey) ?? 0;
             thisYear.push(v);
             lastYear.push(ly);
         }
         return { dates, thisYear, lastYear };
     }
     buildOtaPriceTrend(params) {
-        const end = params.dataDate;
-        const start = addDays(end, -(params.days - 1));
+        const start = params.startDate;
+        const days = Math.max(1, daysBetween(params.startDate, params.endDate) + 1);
         const hotelMap = new Map(params.hotelSeries.map((p) => [p.date, p.price]));
         const dates = [];
         const hotel = [];
         const regionAvg = [];
         const lastYear = [];
         const base = avg(params.hotelSeries.slice(-7).map((p) => p.price)) || 650;
-        for (let i = 0; i < params.days; i += 1) {
+        for (let i = 0; i < days; i += 1) {
             const d = addDays(start, i);
             const key = toIsoDate(d);
             dates.push(key);

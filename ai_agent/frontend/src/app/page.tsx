@@ -83,26 +83,35 @@ export default function Home() {
             <TopBar dataDate={overview?.dataDate ?? dataDate} />
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
-            <div className="text-sm text-zinc-600">HID</div>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm">
+            <div className="text-sm font-semibold text-zinc-900">HID</div>
             <input
               inputMode="numeric"
-              className="w-[140px] rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              className={`w-[170px] rounded-lg border px-3 py-2 text-base font-semibold text-zinc-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${hid.trim()
+                  ? 'border-blue-400 bg-blue-50/60'
+                  : 'border-zinc-300 bg-white'
+                }`}
               value={hid}
               onChange={(e) => setHid(e.target.value)}
               placeholder="例如 2732704"
             />
-            <div className="text-sm text-zinc-600">入住开始日期</div>
+            <div className="text-sm font-semibold text-zinc-900">入住开始日期</div>
             <input
               type="date"
-              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              className={`rounded-lg border px-3 py-2 text-base font-semibold text-zinc-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${startDate
+                  ? 'border-blue-400 bg-blue-50/60'
+                  : 'border-zinc-300 bg-white'
+                }`}
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
-            <div className="text-sm text-zinc-600">入住结束日期</div>
+            <div className="text-sm font-semibold text-zinc-900">入住结束日期</div>
             <input
               type="date"
-              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              className={`rounded-lg border px-3 py-2 text-base font-semibold text-zinc-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${endDate
+                  ? 'border-blue-400 bg-blue-50/60'
+                  : 'border-zinc-300 bg-white'
+                }`}
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
