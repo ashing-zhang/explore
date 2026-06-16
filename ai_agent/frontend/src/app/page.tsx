@@ -23,12 +23,24 @@ export default function Home() {
   const dataDate = todayIso();
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [hid, setHid] = useState<string>('');
   const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const hasSelectedDateRange = Boolean(startDate) && Boolean(endDate);
+  const hasSelectedQuery = hasSelectedDateRange && Boolean(hid.trim());
 
   useEffect(() => {
     let alive = true; // 状态隔离标记（竞态锁），防止组件卸载或连续快速切换日期导致的数据错乱
+    if (!hasSelectedQuery) {
+      setLoading(false);
+      setError(null);
+      setOverview(null);
+      return () => {
+        alive = false;
+      };
+    }
+
     setLoading(true);
     setError(null);
     if (startDate && endDate && startDate > endDate) {
@@ -43,6 +55,7 @@ export default function Home() {
       dataDate,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
+      hid: hid.trim() || undefined,
     })
       .then((res) => {
         if (!alive) return; // 如果在请求完成前，用户又切换了日期或者离开了页面，则丢弃该次结果
@@ -59,7 +72,7 @@ export default function Home() {
     return () => {
       alive = false;  // 清理函数：当 dataDate 改变重新触发 effect，或者组件销毁时，将上一次的 alive 设为 false
     };
-  }, [startDate, endDate]);
+  }, [startDate, endDate, hid, hasSelectedQuery]);
 
   return (
     <div className="flex min-h-dvh bg-zinc-50">
@@ -71,6 +84,14 @@ export default function Home() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+            <div className="text-sm text-zinc-600">HID</div>
+            <input
+              inputMode="numeric"
+              className="w-[140px] rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              value={hid}
+              onChange={(e) => setHid(e.target.value)}
+              placeholder="例如 2732704"
+            />
             <div className="text-sm text-zinc-600">入住开始日期</div>
             <input
               type="date"
@@ -97,14 +118,16 @@ export default function Home() {
             <MetricTile
               title="包房日期范围"
               value={
-                overview?.packageDateRange
-                  ? rangeText(overview.packageDateRange)
-                  : loading
-                    ? '加载中…'
-                    : '—'
+                !hasSelectedQuery
+                  ? ''
+                  : overview?.packageDateRange
+                    ? rangeText(overview.packageDateRange)
+                    : loading
+                      ? '加载中…'
+                      : '—'
               }
               sub={
-                overview?.packageDateRange
+                hasSelectedQuery && overview?.packageDateRange
                   ? `共 ${overview.packageDateRange.days} 天`
                   : undefined
               }
@@ -113,10 +136,16 @@ export default function Home() {
             <MetricTile
               title="总库存（间夜）"
               value={
-                overview ? `${overview.summary.totalInventory}` : loading ? '加载中…' : '—'
+                !hasSelectedQuery
+                  ? ''
+                  : overview
+                    ? `${overview.summary.totalInventory}`
+                    : loading
+                      ? '加载中…'
+                      : '—'
               }
               sub={
-                overview?.packageDateRange
+                hasSelectedQuery && overview?.packageDateRange
                   ? `参考天数：${overview.packageDateRange.days} 天`
                   : undefined
               }
@@ -125,10 +154,16 @@ export default function Home() {
             <MetricTile
               title="已售（间夜）"
               value={
-                overview ? `${overview.summary.soldInventory}` : loading ? '加载中…' : '—'
+                !hasSelectedQuery
+                  ? ''
+                  : overview
+                    ? `${overview.summary.soldInventory}`
+                    : loading
+                      ? '加载中…'
+                      : '—'
               }
               sub={
-                overview
+                hasSelectedQuery && overview
                   ? `${Math.round(
                     (overview.summary.soldInventory / Math.max(1, overview.summary.totalInventory)) * 100,
                   )}%`
@@ -139,10 +174,16 @@ export default function Home() {
             <MetricTile
               title="剩余库存（间夜）"
               value={
-                overview ? `${overview.summary.remainingInventory}` : loading ? '加载中…' : '—'
+                !hasSelectedQuery
+                  ? ''
+                  : overview
+                    ? `${overview.summary.remainingInventory}`
+                    : loading
+                      ? '加载中…'
+                      : '—'
               }
               sub={
-                overview
+                hasSelectedQuery && overview
                   ? `${Math.round(
                     (overview.summary.remainingInventory / Math.max(1, overview.summary.totalInventory)) * 100,
                   )}%`
@@ -153,18 +194,28 @@ export default function Home() {
             <MetricTile
               title="距离入住"
               value={
-                overview?.packageDateRange
-                  ? `${overview.packageDateRange.daysToCheckIn} 天`
-                  : loading
-                    ? '加载中…'
-                    : '—'
+                !hasSelectedQuery
+                  ? ''
+                  : overview?.packageDateRange
+                    ? `${overview.packageDateRange.daysToCheckIn} 天`
+                    : loading
+                      ? '加载中…'
+                      : '—'
               }
               accent="orange"
             />
             <MetricTile
               title="市场热度"
-              value={overview ? overview.summary.marketHeatText : loading ? '加载中…' : '—'}
-              sub={overview ? overview.summary.marketHeatDeltaText : undefined}
+              value={
+                !hasSelectedQuery
+                  ? ''
+                  : overview
+                    ? overview.summary.marketHeatText
+                    : loading
+                      ? '加载中…'
+                      : '—'
+              }
+              sub={hasSelectedQuery && overview ? overview.summary.marketHeatDeltaText : undefined}
               accent="blue"
             />
           </div>

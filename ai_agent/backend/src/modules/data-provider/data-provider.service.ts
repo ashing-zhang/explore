@@ -6,9 +6,9 @@ import {
   RecommendationRequest,
 } from './types';
 import { MockDataProvider } from './providers/mock-data-provider';
-import { PostgresDataProvider } from './providers/postgres-data-provider';
+import { OdpsDataProvider } from './providers/odps-data-provider';
 
-export type DataProviderKind = 'mock' | 'postgres';
+export type DataProviderKind = 'mock' | 'odps';
 
 export interface DataProvider {
   getMarketSnapshot(req: RecommendationRequest): Promise<MarketSnapshot>;
@@ -23,11 +23,11 @@ export class DataProviderService implements DataProvider {
 
   constructor(
     private readonly mockDataProvider: MockDataProvider,
-    private readonly postgresDataProvider: PostgresDataProvider,
+    private readonly odpsDataProvider: OdpsDataProvider,
   ) {
     const kind = (process.env.DATA_PROVIDER?.toLowerCase() as DataProviderKind) ??
       'mock';
-    this.provider = kind === 'postgres' ? postgresDataProvider : mockDataProvider;
+    this.provider = kind === 'odps' ? odpsDataProvider : mockDataProvider;
   }
 
   getMarketSnapshot(req: RecommendationRequest): Promise<MarketSnapshot> {
@@ -46,4 +46,3 @@ export class DataProviderService implements DataProvider {
     return this.provider.getCompetitorPrices(req);
   }
 }
-

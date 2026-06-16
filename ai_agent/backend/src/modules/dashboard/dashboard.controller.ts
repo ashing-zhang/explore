@@ -10,8 +10,8 @@ export class DashboardController {
     @Query('dataDate') dataDate?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('hid') hid?: string,
   ) {
-    return this.dashboard.getOverview({ dataDate, startDate, endDate });
+    return this.dashboard.getOverview({ dataDate, startDate, endDate, hid });
   }
 }
-
