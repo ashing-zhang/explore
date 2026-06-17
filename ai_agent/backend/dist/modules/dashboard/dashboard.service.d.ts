@@ -2,6 +2,7 @@ import { PricingAgentService } from '../agent/pricing-agent.service';
 import type { DashboardOverviewResponse } from './dashboard.types';
 export declare class DashboardService {
     private readonly agent;
+    private readonly logger;
     constructor(agent: PricingAgentService);
     getOverview(params: {
         dataDate?: string;

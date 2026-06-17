@@ -23,11 +23,15 @@ export default function Home() {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [hid, setHid] = useState<string>('');
+  const [query, setQuery] = useState<{ startDate: string; endDate: string; hid: string } | null>(
+    null,
+  );
   const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const hasSelectedDateRange = Boolean(startDate) && Boolean(endDate);
-  const hasSelectedQuery = hasSelectedDateRange && Boolean(hid.trim());
+  const hasFilledForm = Boolean(startDate) && Boolean(endDate) && Boolean(hid.trim());
+  const canConfirm = hasFilledForm && startDate <= endDate;
+  const hasSelectedQuery = Boolean(query);
 
   useEffect(() => {
     let alive = true; // 状态隔离标记（竞态锁），防止组件卸载或连续快速切换日期导致的数据错乱
@@ -42,7 +46,7 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
-    if (startDate && endDate && startDate > endDate) {
+    if (query && query.startDate && query.endDate && query.startDate > query.endDate) {
       setLoading(false);
       setError('开始日期不能晚于结束日期');
       return () => {
@@ -52,9 +56,9 @@ export default function Home() {
 
     fetchDashboardOverview({
       dataDate,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      hid: hid.trim() || undefined,
+      startDate: query?.startDate || undefined,
+      endDate: query?.endDate || undefined,
+      hid: query?.hid || undefined,
     })
       .then((res) => {
         if (!alive) return; // 如果在请求完成前，用户又切换了日期或者离开了页面，则丢弃该次结果
@@ -71,7 +75,7 @@ export default function Home() {
     return () => {
       alive = false;  // 清理函数：当 dataDate 改变重新触发 effect，或者组件销毁时，将上一次的 alive 设为 false
     };
-  }, [startDate, endDate, hid, hasSelectedQuery]);
+  }, [query, hasSelectedQuery]);
 
   return (
     <DashboardShell activeKey="dashboard" title="概览看板" dataDate={overview?.dataDate ?? dataDate}>
@@ -107,190 +111,157 @@ export default function Home() {
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
         />
+        <button
+          type="button"
+          disabled={!canConfirm || loading}
+          onClick={() => {
+            const trimmed = hid.trim();
+            if (!trimmed || !startDate || !endDate) return;
+            setOverview(null);
+            setError(null);
+            setQuery({ hid: trimmed, startDate, endDate });
+          }}
+          className={`rounded-lg px-4 py-2 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 ${canConfirm && !loading
+            ? 'bg-blue-600 text-white hover:bg-blue-700'
+            : 'cursor-not-allowed bg-zinc-200 text-zinc-500'
+            }`}
+        >
+          {loading ? '查询中...' : '确认'}
+        </button>
       </div>
 
-      {error ? (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {error}
+      {!hasSelectedQuery ? (
+        <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600 shadow-sm">
+          请先输入 HID、入住开始日期、入住结束日期，并点击“确认”后查看概览看板。
         </div>
-      ) : null}
+      ) : (
+        <>
+          {error ? (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              {error}
+            </div>
+          ) : null}
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        <MetricTile
-          title="包房日期范围"
-          value={
-            !hasSelectedQuery
-              ? ''
-              : overview?.packageDateRange
-                ? rangeText(overview.packageDateRange)
-                : loading
-                  ? '加载中…'
-                  : '—'
-          }
-          sub={
-            hasSelectedQuery && overview?.packageDateRange
-              ? `共 ${overview.packageDateRange.days} 天`
-              : undefined
-          }
-          accent="blue"
-        />
-        <MetricTile
-          title="总库存（间夜）"
-          value={
-            !hasSelectedQuery
-              ? ''
-              : overview
-                ? `${overview.summary.totalInventory}`
-                : loading
-                  ? '加载中…'
-                  : '—'
-          }
-          sub={
-            hasSelectedQuery && overview?.packageDateRange
-              ? `参考天数：${overview.packageDateRange.days} 天`
-              : undefined
-          }
-          accent="teal"
-        />
-        <MetricTile
-          title="已售（间夜）"
-          value={
-            !hasSelectedQuery
-              ? ''
-              : overview
-                ? `${overview.summary.soldInventory}`
-                : loading
-                  ? '加载中…'
-                  : '—'
-          }
-          sub={
-            hasSelectedQuery && overview
-              ? `${Math.round(
-                (overview.summary.soldInventory / Math.max(1, overview.summary.totalInventory)) * 100,
-              )}%`
-              : undefined
-          }
-          accent="green"
-        />
-        <MetricTile
-          title="剩余库存（间夜）"
-          value={
-            !hasSelectedQuery
-              ? ''
-              : overview
-                ? `${overview.summary.remainingInventory}`
-                : loading
-                  ? '加载中…'
-                  : '—'
-          }
-          sub={
-            hasSelectedQuery && overview
-              ? `${Math.round(
-                (overview.summary.remainingInventory / Math.max(1, overview.summary.totalInventory)) * 100,
-              )}%`
-              : undefined
-          }
-          accent="purple"
-        />
-        <MetricTile
-          title="距离入住"
-          value={
-            !hasSelectedQuery
-              ? ''
-              : overview?.packageDateRange
-                ? `${overview.packageDateRange.daysToCheckIn} 天`
-                : loading
-                  ? '加载中…'
-                  : '—'
-          }
-          accent="orange"
-        />
-        <MetricTile
-          title="市场热度"
-          value={
-            !hasSelectedQuery
-              ? ''
-              : overview
-                ? overview.summary.marketHeatText
-                : loading
-                  ? '加载中…'
-                  : '—'
-          }
-          sub={hasSelectedQuery && overview ? overview.summary.marketHeatDeltaText : undefined}
-          accent="blue"
-        />
-      </div>
+          {loading && !overview ? (
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="text-base font-semibold text-zinc-900">概览看板加载中</div>
+              <div className="mt-2 text-sm text-zinc-600">
+                正在获取库存、历史订单和价格趋势数据，请稍候...
+              </div>
+            </div>
+          ) : overview ? (
+            <>
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                <MetricTile
+                  title="包房日期范围"
+                  value={rangeText(overview.packageDateRange)}
+                  sub={`共 ${overview.packageDateRange.days} 天`}
+                  accent="blue"
+                />
+                <MetricTile
+                  title="总库存（间夜）"
+                  value={`${overview.summary.totalInventory}`}
+                  sub={`参考天数：${overview.packageDateRange.days} 天`}
+                  accent="teal"
+                />
+                <MetricTile
+                  title="已售（间夜）"
+                  value={`${overview.summary.soldInventory}`}
+                  sub={`${Math.round(
+                    (overview.summary.soldInventory / Math.max(1, overview.summary.totalInventory)) *
+                    100,
+                  )}%`}
+                  accent="green"
+                />
+                <MetricTile
+                  title="剩余库存（间夜）"
+                  value={`${overview.summary.remainingInventory}`}
+                  sub={`${Math.round(
+                    (overview.summary.remainingInventory /
+                      Math.max(1, overview.summary.totalInventory)) *
+                    100,
+                  )}%`}
+                  accent="purple"
+                />
+                <MetricTile
+                  title="距离入住"
+                  value={`${overview.packageDateRange.daysToCheckIn} 天`}
+                  accent="orange"
+                />
+                <MetricTile
+                  title="市场热度"
+                  value={overview.summary.marketHeatText}
+                  sub={overview.summary.marketHeatDeltaText}
+                  accent="blue"
+                />
+              </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <MultiLineChart
-            title="订单趋势（间夜）"
-            dates={overview?.charts.orderTrend.dates ?? []}
-            series={[
-              {
-                name: '今年累计销量',
-                data: overview?.charts.orderTrend.thisYear ?? [],
-                color: '#3b82f6',
-              },
-              {
-                name: '去年同期销量',
-                data: overview?.charts.orderTrend.lastYear ?? [],
-                color: '#22c55e',
-              },
-            ]}
-          />
-        </div>
-        <div className="lg:col-span-1">
-          <MultiLineChart
-            title="OTA 价格趋势（平均价 CNY）"
-            dates={overview?.charts.otaPriceTrend.dates ?? []}
-            series={[
-              {
-                name: '本酒店',
-                data: overview?.charts.otaPriceTrend.hotel ?? [],
-                color: '#3b82f6',
-              },
-              {
-                name: '区域平均',
-                data: overview?.charts.otaPriceTrend.regionAvg ?? [],
-                color: '#f97316',
-              },
-              {
-                name: '去年同期',
-                data: overview?.charts.otaPriceTrend.lastYear ?? [],
-                color: '#22c55e',
-              },
-            ]}
-          />
-        </div>
-        <div className="lg:col-span-1">
-          {overview?.inventoryCalendar ? (
-            <InventoryCalendar calendar={overview.inventoryCalendar} />
+              <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-1">
+                  <MultiLineChart
+                    title="订单趋势（间夜）"
+                    dates={overview.charts.orderTrend.dates}
+                    series={[
+                      {
+                        name: '今年累计销量',
+                        data: overview.charts.orderTrend.thisYear,
+                        color: '#3b82f6',
+                      },
+                      {
+                        name: '去年同期销量',
+                        data: overview.charts.orderTrend.lastYear,
+                        color: '#22c55e',
+                      },
+                    ]}
+                  />
+                </div>
+                <div className="lg:col-span-1">
+                  <MultiLineChart
+                    title="OTA 价格趋势（平均价 CNY）"
+                    dates={overview.charts.otaPriceTrend.dates}
+                    series={[
+                      {
+                        name: '本酒店',
+                        data: overview.charts.otaPriceTrend.hotel,
+                        color: '#3b82f6',
+                      },
+                      {
+                        name: '区域平均',
+                        data: overview.charts.otaPriceTrend.regionAvg,
+                        color: '#f97316',
+                      },
+                      {
+                        name: '去年同期',
+                        data: overview.charts.otaPriceTrend.lastYear,
+                        color: '#22c55e',
+                      },
+                    ]}
+                  />
+                </div>
+                <div className="lg:col-span-1">
+                  <InventoryCalendar calendar={overview.inventoryCalendar} />
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <AiSuggestionsTable rows={overview.aiSuggestions} />
+              </div>
+
+              <div className="mt-4">
+                <InsightCards
+                  keyIndicators={overview.keyIndicators}
+                  actions={overview.actions}
+                  riskAlerts={overview.riskAlerts}
+                />
+              </div>
+            </>
           ) : (
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <div className="text-sm text-zinc-600">{loading ? '加载中…' : '—'}</div>
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600 shadow-sm">
+              当前条件下暂无可展示的概览数据。
             </div>
           )}
-        </div>
-      </div>
-
-      <div className="mt-5">
-        <AiSuggestionsTable rows={overview?.aiSuggestions ?? []} />
-      </div>
-
-      <div className="mt-4">
-        {overview ? (
-          <InsightCards
-            keyIndicators={overview.keyIndicators}
-            actions={overview.actions}
-            riskAlerts={overview.riskAlerts}
-          />
-        ) : (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-sm text-zinc-600">{loading ? '加载中…' : '—'}</div>
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </DashboardShell>
   );
 }

@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { HistoricalDataService } from '../tools/historical-data/historical-data.service';
@@ -32,9 +33,14 @@ const AgentOutputsSchema = z.object({
   reasoning: z.array(z.string()),
 });
 
+function apiTimingEnabled(): boolean {
+  return process.env.LOG_API_TIMING === '1';
+}
+
 @Injectable()
 export class PricingAgentService {
   private readonly client?: OpenAI;
+  private readonly logger = new Logger(PricingAgentService.name);
 
   constructor(
     private readonly marketData: MarketDataService,
@@ -48,13 +54,38 @@ export class PricingAgentService {
   }
 
   async buildInputs(req: RecommendationRequest): Promise<AgentInputs> {
-    const market_snapshot = await this.marketData.getMarketSnapshot(req);
-    const [historical_orders, historical_prices, competitor_prices] =
-      await Promise.all([
-        this.historicalData.getHistoricalOrders(req),
-        this.historicalData.getHistoricalPrices(req),
-        Promise.resolve(market_snapshot.competitorPriceSeries),
-      ]);
+    const enabled = apiTimingEnabled();
+    const tag = enabled
+      ? ` hid=${String((req as { hid?: string }).hid ?? '')} start=${String((req as { startDate?: string }).startDate ?? '')} end=${String((req as { endDate?: string }).endDate ?? '')}`
+      : '';
+    const totalStart = enabled ? performance.now() : 0;
+
+    const marketStart = enabled ? performance.now() : 0;
+    const marketP = this.marketData.getMarketSnapshot(req).then((v) => {
+      if (enabled) this.logger.log(`buildInputs marketSnapshot ${(performance.now() - marketStart).toFixed(1)}ms${tag}`);
+      return v;
+    });
+
+    const ordersStart = enabled ? performance.now() : 0;
+    const ordersP = this.historicalData.getHistoricalOrders(req).then((v) => {
+      if (enabled) this.logger.log(`buildInputs historicalOrders ${(performance.now() - ordersStart).toFixed(1)}ms${tag}`);
+      return v;
+    });
+
+    const pricesStart = enabled ? performance.now() : 0;
+    const pricesP = this.historicalData.getHistoricalPrices(req).then((v) => {
+      if (enabled) this.logger.log(`buildInputs historicalPrices ${(performance.now() - pricesStart).toFixed(1)}ms${tag}`);
+      return v;
+    });
+
+    const [market_snapshot, historical_orders, historical_prices] = await Promise.all([
+      marketP,
+      ordersP,
+      pricesP,
+    ]);
+    const competitor_prices = market_snapshot.competitorPriceSeries;
+
+    if (enabled) this.logger.log(`buildInputs total ${(performance.now() - totalStart).toFixed(1)}ms${tag}`);
 
     return {
       market_snapshot,
@@ -65,8 +96,23 @@ export class PricingAgentService {
     };
   }
 
-  async recommend(req: RecommendationRequest): Promise<AgentOutputs> {
+  async recommend(
+    req: RecommendationRequest,
+    options?: { allowLlm?: boolean },
+  ): Promise<AgentOutputs> {
     const inputs = await this.buildInputs(req);
+    return this.recommendFromInputs(inputs, options);
+  }
+
+  async recommendFromInputs(
+    inputs: AgentInputs,
+    options?: { allowLlm?: boolean },
+  ): Promise<AgentOutputs> {
+    const allowLlm = options?.allowLlm ?? true;
+    if (!allowLlm) {
+      return this.heuristicRecommend(inputs);
+    }
+
     const llm = await this.tryLlmRecommend(inputs);
     if (llm) return llm;
     return this.heuristicRecommend(inputs);

@@ -8,9 +8,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var DashboardService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardService = void 0;
 const common_1 = require("@nestjs/common");
+const node_perf_hooks_1 = require("node:perf_hooks");
 const pricing_agent_service_1 = require("../agent/pricing-agent.service");
 function toIsoDate(d) {
     return d.toISOString().slice(0, 10);
@@ -55,12 +57,18 @@ function formatDeltaText(delta) {
         return `较上周 ↑ ${delta}`;
     return `较上周 ↓ ${Math.abs(delta)}`;
 }
-let DashboardService = class DashboardService {
+function apiTimingEnabled() {
+    return process.env.LOG_API_TIMING === '1';
+}
+let DashboardService = DashboardService_1 = class DashboardService {
     agent;
+    logger = new common_1.Logger(DashboardService_1.name);
     constructor(agent) {
         this.agent = agent;
     }
     async getOverview(params) {
+        const enabled = apiTimingEnabled();
+        const totalStart = enabled ? node_perf_hooks_1.performance.now() : 0;
         const dataDate = params.dataDate ? new Date(params.dataDate) : new Date();
         const start = params.startDate ? new Date(params.startDate) : addDays(dataDate, 30);
         const end = params.endDate
@@ -68,18 +76,22 @@ let DashboardService = class DashboardService {
             : addDays(start, 15);
         const rangeDays = Math.max(1, daysBetween(start, end) + 1);
         const daysToCheckIn = Math.max(0, daysBetween(dataDate, start));
+        const tag = enabled
+            ? ` hid=${params.hid ?? ''} start=${toIsoDate(start)} end=${toIsoDate(end)}`
+            : '';
+        const inputsStart = enabled ? node_perf_hooks_1.performance.now() : 0;
         const inputs = await this.agent.buildInputs({
             targetDate: toIsoDate(dataDate),
             startDate: toIsoDate(start),
             endDate: toIsoDate(end),
             hid: params.hid,
         });
-        const rec = await this.agent.recommend({
-            targetDate: toIsoDate(dataDate),
-            startDate: toIsoDate(start),
-            endDate: toIsoDate(end),
-            hid: params.hid,
-        });
+        if (enabled)
+            this.logger.log(`overview buildInputs ${(node_perf_hooks_1.performance.now() - inputsStart).toFixed(1)}ms${tag}`);
+        const recStart = enabled ? node_perf_hooks_1.performance.now() : 0;
+        const rec = await this.agent.recommendFromInputs(inputs, { allowLlm: false });
+        if (enabled)
+            this.logger.log(`overview recommend ${(node_perf_hooks_1.performance.now() - recStart).toFixed(1)}ms${tag}`);
         const totalInventory = inputs.inventory_status.packageTotal;
         const soldInventory = inputs.inventory_status.packageSold;
         const remainingInventory = inputs.inventory_status.packageRemaining;
@@ -107,6 +119,8 @@ let DashboardService = class DashboardService {
             baseRemaining: Math.max(1, Math.round(remainingInventory / rangeDays)),
             recommendedPrice: rec.recommended_price,
         });
+        if (enabled)
+            this.logger.log(`overview total ${(node_perf_hooks_1.performance.now() - totalStart).toFixed(1)}ms${tag}`);
         return {
             dataDate: toIsoDate(dataDate),
             packageDateRange: {
@@ -267,7 +281,7 @@ let DashboardService = class DashboardService {
     }
 };
 exports.DashboardService = DashboardService;
-exports.DashboardService = DashboardService = __decorate([
+exports.DashboardService = DashboardService = DashboardService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [pricing_agent_service_1.PricingAgentService])
 ], DashboardService);

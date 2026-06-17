@@ -14,8 +14,34 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardController = void 0;
 const common_1 = require("@nestjs/common");
+const node_perf_hooks_1 = require("node:perf_hooks");
+const operators_1 = require("rxjs/operators");
 const dashboard_service_1 = require("./dashboard.service");
 const dashboard_pages_service_1 = require("./dashboard-pages.service");
+function apiTimingEnabled() {
+    return process.env.LOG_API_TIMING === '1';
+}
+let ApiTimingInterceptor = class ApiTimingInterceptor {
+    logger = new common_1.Logger('ApiTiming');
+    intercept(context, next) {
+        if (!apiTimingEnabled())
+            return next.handle();
+        const req = context.switchToHttp().getRequest();
+        const start = node_perf_hooks_1.performance.now();
+        const method = req?.method ?? 'GET';
+        const path = req?.originalUrl ?? req?.url ?? '';
+        const query = req?.query && typeof req.query === 'object' && Object.keys(req.query).length > 0
+            ? ` query=${JSON.stringify(req.query)}`
+            : '';
+        return next.handle().pipe((0, operators_1.finalize)(() => {
+            const ms = node_perf_hooks_1.performance.now() - start;
+            this.logger.log(`${method} ${path} ${ms.toFixed(1)}ms${query}`);
+        }));
+    }
+};
+ApiTimingInterceptor = __decorate([
+    (0, common_1.Injectable)()
+], ApiTimingInterceptor);
 let DashboardController = class DashboardController {
     dashboard;
     pages;
@@ -110,6 +136,7 @@ __decorate([
 ], DashboardController.prototype, "getExecution", null);
 exports.DashboardController = DashboardController = __decorate([
     (0, common_1.Controller)('dashboard'),
+    (0, common_1.UseInterceptors)(ApiTimingInterceptor),
     __metadata("design:paramtypes", [dashboard_service_1.DashboardService,
         dashboard_pages_service_1.DashboardPagesService])
 ], DashboardController);

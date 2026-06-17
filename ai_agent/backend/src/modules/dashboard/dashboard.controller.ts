@@ -1,8 +1,54 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import {
+  CallHandler,
+  Controller,
+  ExecutionContext,
+  Get,
+  Injectable,
+  Logger,
+  NestInterceptor,
+  Query,
+  UseInterceptors,
+} from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
+import { finalize } from 'rxjs/operators';
 import { DashboardService } from './dashboard.service';
 import { DashboardPagesService } from './dashboard-pages.service';
 
+function apiTimingEnabled(): boolean {
+  return process.env.LOG_API_TIMING === '1';
+}
+
+@Injectable()
+class ApiTimingInterceptor implements NestInterceptor {
+  private readonly logger = new Logger('ApiTiming');
+
+  intercept(context: ExecutionContext, next: CallHandler) {
+    if (!apiTimingEnabled()) return next.handle();
+    const req = context.switchToHttp().getRequest<{
+      method?: string;
+      originalUrl?: string;
+      url?: string;
+      query?: unknown;
+    }>();
+    const start = performance.now();
+    const method = req?.method ?? 'GET';
+    const path = req?.originalUrl ?? req?.url ?? '';
+    const query =
+      req?.query && typeof req.query === 'object' && Object.keys(req.query as object).length > 0
+        ? ` query=${JSON.stringify(req.query)}`
+        : '';
+
+    return next.handle().pipe(
+      finalize(() => {
+        const ms = performance.now() - start;
+        this.logger.log(`${method} ${path} ${ms.toFixed(1)}ms${query}`);
+      }),
+    );
+  }
+}
+
 @Controller('dashboard')
+@UseInterceptors(ApiTimingInterceptor)
 export class DashboardController {
   constructor(
     private readonly dashboard: DashboardService,

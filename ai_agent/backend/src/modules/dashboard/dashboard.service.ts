@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
 import { PricingAgentService } from '../agent/pricing-agent.service';
 import type { DashboardOverviewResponse } from './dashboard.types';
 
@@ -48,8 +49,14 @@ function formatDeltaText(delta: number): string {
   return `较上周 ↓ ${Math.abs(delta)}`;
 }
 
+function apiTimingEnabled(): boolean {
+  return process.env.LOG_API_TIMING === '1';
+}
+
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
+
   constructor(private readonly agent: PricingAgentService) { }
 
   async getOverview(params: {
@@ -58,6 +65,8 @@ export class DashboardService {
     endDate?: string;
     hid?: string;
   }): Promise<DashboardOverviewResponse> {
+    const enabled = apiTimingEnabled();
+    const totalStart = enabled ? performance.now() : 0;
     const dataDate = params.dataDate ? new Date(params.dataDate) : new Date();
     const start =
       params.startDate ? new Date(params.startDate) : addDays(dataDate, 30);
@@ -68,19 +77,22 @@ export class DashboardService {
 
     const rangeDays = Math.max(1, daysBetween(start, end) + 1);
     const daysToCheckIn = Math.max(0, daysBetween(dataDate, start));
+    const tag = enabled
+      ? ` hid=${params.hid ?? ''} start=${toIsoDate(start)} end=${toIsoDate(end)}`
+      : '';
 
+    const inputsStart = enabled ? performance.now() : 0;
     const inputs = await this.agent.buildInputs({
       targetDate: toIsoDate(dataDate),
       startDate: toIsoDate(start),
       endDate: toIsoDate(end),
       hid: params.hid,
     });
-    const rec = await this.agent.recommend({
-      targetDate: toIsoDate(dataDate),
-      startDate: toIsoDate(start),
-      endDate: toIsoDate(end),
-      hid: params.hid,
-    });
+    if (enabled) this.logger.log(`overview buildInputs ${(performance.now() - inputsStart).toFixed(1)}ms${tag}`);
+
+    const recStart = enabled ? performance.now() : 0;
+    const rec = await this.agent.recommendFromInputs(inputs, { allowLlm: false });
+    if (enabled) this.logger.log(`overview recommend ${(performance.now() - recStart).toFixed(1)}ms${tag}`);
 
     const totalInventory = inputs.inventory_status.packageTotal;
     const soldInventory = inputs.inventory_status.packageSold;
@@ -115,6 +127,7 @@ export class DashboardService {
       recommendedPrice: rec.recommended_price,
     });
 
+    if (enabled) this.logger.log(`overview total ${(performance.now() - totalStart).toFixed(1)}ms${tag}`);
     return {
       dataDate: toIsoDate(dataDate),
       packageDateRange: {

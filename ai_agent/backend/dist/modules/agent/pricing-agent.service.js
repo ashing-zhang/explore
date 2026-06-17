@@ -11,9 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var PricingAgentService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PricingAgentService = void 0;
 const common_1 = require("@nestjs/common");
+const node_perf_hooks_1 = require("node:perf_hooks");
 const openai_1 = __importDefault(require("openai"));
 const zod_1 = require("zod");
 const historical_data_service_1 = require("../tools/historical-data/historical-data.service");
@@ -39,11 +41,15 @@ const AgentOutputsSchema = zod_1.z.object({
     confidence: zod_1.z.number().min(0).max(1),
     reasoning: zod_1.z.array(zod_1.z.string()),
 });
-let PricingAgentService = class PricingAgentService {
+function apiTimingEnabled() {
+    return process.env.LOG_API_TIMING === '1';
+}
+let PricingAgentService = PricingAgentService_1 = class PricingAgentService {
     marketData;
     historicalData;
     analytics;
     client;
+    logger = new common_1.Logger(PricingAgentService_1.name);
     constructor(marketData, historicalData, analytics) {
         this.marketData = marketData;
         this.historicalData = historicalData;
@@ -54,12 +60,37 @@ let PricingAgentService = class PricingAgentService {
         }
     }
     async buildInputs(req) {
-        const market_snapshot = await this.marketData.getMarketSnapshot(req);
-        const [historical_orders, historical_prices, competitor_prices] = await Promise.all([
-            this.historicalData.getHistoricalOrders(req),
-            this.historicalData.getHistoricalPrices(req),
-            Promise.resolve(market_snapshot.competitorPriceSeries),
+        const enabled = apiTimingEnabled();
+        const tag = enabled
+            ? ` hid=${String(req.hid ?? '')} start=${String(req.startDate ?? '')} end=${String(req.endDate ?? '')}`
+            : '';
+        const totalStart = enabled ? node_perf_hooks_1.performance.now() : 0;
+        const marketStart = enabled ? node_perf_hooks_1.performance.now() : 0;
+        const marketP = this.marketData.getMarketSnapshot(req).then((v) => {
+            if (enabled)
+                this.logger.log(`buildInputs marketSnapshot ${(node_perf_hooks_1.performance.now() - marketStart).toFixed(1)}ms${tag}`);
+            return v;
+        });
+        const ordersStart = enabled ? node_perf_hooks_1.performance.now() : 0;
+        const ordersP = this.historicalData.getHistoricalOrders(req).then((v) => {
+            if (enabled)
+                this.logger.log(`buildInputs historicalOrders ${(node_perf_hooks_1.performance.now() - ordersStart).toFixed(1)}ms${tag}`);
+            return v;
+        });
+        const pricesStart = enabled ? node_perf_hooks_1.performance.now() : 0;
+        const pricesP = this.historicalData.getHistoricalPrices(req).then((v) => {
+            if (enabled)
+                this.logger.log(`buildInputs historicalPrices ${(node_perf_hooks_1.performance.now() - pricesStart).toFixed(1)}ms${tag}`);
+            return v;
+        });
+        const [market_snapshot, historical_orders, historical_prices] = await Promise.all([
+            marketP,
+            ordersP,
+            pricesP,
         ]);
+        const competitor_prices = market_snapshot.competitorPriceSeries;
+        if (enabled)
+            this.logger.log(`buildInputs total ${(node_perf_hooks_1.performance.now() - totalStart).toFixed(1)}ms${tag}`);
         return {
             market_snapshot,
             historical_orders,
@@ -68,8 +99,15 @@ let PricingAgentService = class PricingAgentService {
             inventory_status: market_snapshot.inventoryStatus,
         };
     }
-    async recommend(req) {
+    async recommend(req, options) {
         const inputs = await this.buildInputs(req);
+        return this.recommendFromInputs(inputs, options);
+    }
+    async recommendFromInputs(inputs, options) {
+        const allowLlm = options?.allowLlm ?? true;
+        if (!allowLlm) {
+            return this.heuristicRecommend(inputs);
+        }
         const llm = await this.tryLlmRecommend(inputs);
         if (llm)
             return llm;
@@ -174,7 +212,7 @@ let PricingAgentService = class PricingAgentService {
     }
 };
 exports.PricingAgentService = PricingAgentService;
-exports.PricingAgentService = PricingAgentService = __decorate([
+exports.PricingAgentService = PricingAgentService = PricingAgentService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [market_data_service_1.MarketDataService,
         historical_data_service_1.HistoricalDataService,
