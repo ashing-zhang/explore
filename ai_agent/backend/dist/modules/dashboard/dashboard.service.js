@@ -57,6 +57,22 @@ function formatDeltaText(delta) {
         return `较上周 ↑ ${delta}`;
     return `较上周 ↓ ${Math.abs(delta)}`;
 }
+function bookingWindowText(params) {
+    const thisTotal = params.thisTotal;
+    const lastTotal = params.lastTotal;
+    if (lastTotal <= 0) {
+        if (thisTotal <= 0)
+            return '出现情况与去年相似';
+        return '提前出现（去年同期基线为 0）';
+    }
+    const deltaPct = (thisTotal - lastTotal) / lastTotal;
+    const pctText = `${Math.round(deltaPct * 100)}%`;
+    if (deltaPct >= 0.2)
+        return `提前出现（今年较去年 ${pctText}）`;
+    if (deltaPct <= -0.2)
+        return `滞后出现（今年较去年 ${pctText}）`;
+    return `出现情况与去年相似（今年较去年 ${pctText}）`;
+}
 function apiTimingEnabled() {
     return process.env.LOG_API_TIMING === '1';
 }
@@ -102,6 +118,19 @@ let DashboardService = DashboardService_1 = class DashboardService {
             endDate: end,
             orders: inputs.historical_orders,
         });
+        const startYear = start.getUTCFullYear();
+        let thisYearTotal = 0;
+        let lastYearTotal = 0;
+        for (const o of inputs.historical_orders) {
+            const y = Number(o.checkInDate.slice(0, 4));
+            if (!Number.isFinite(y))
+                continue;
+            if (y === startYear)
+                thisYearTotal += o.nights;
+            else if (y === startYear - 1)
+                lastYearTotal += o.nights;
+        }
+        const bookingWindow = bookingWindowText({ thisTotal: thisYearTotal, lastTotal: lastYearTotal });
         const otaPriceTrend = this.buildOtaPriceTrend({
             startDate: start,
             endDate: end,
@@ -143,7 +172,7 @@ let DashboardService = DashboardService_1 = class DashboardService {
             inventoryCalendar,
             aiSuggestions,
             keyIndicators: {
-                bookingWindow: '可销售开始（较去年同期提前 3 天）',
+                bookingWindow,
                 marketStatus: `${marketHeatText}（较上周 ${marketHeatDelta >= 0 ? '升温' : '降温'}）`,
                 regionInventory: '充足（剩余率 18%）',
                 priceAcceptance: '180% ~ 220%（历史 90 分位）',
