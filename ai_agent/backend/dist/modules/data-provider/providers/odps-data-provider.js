@@ -599,12 +599,9 @@ let OdpsDataProvider = class OdpsDataProvider {
         const snapshotDate = this.targetDate(req);
         const baseSeed = this.seedBase(req);
         const dates = this.buildDateSeries(snapshotDate, 90);
-        const base = this.pickInt(`${baseSeed}:histPrice:base`, 520, 780);
-        return dates.map((date, idx) => {
-            const trend = idx * 0.85;
-            const wave = Math.round(Math.sin(idx / 6) * 16);
-            const noise = this.pickInt(`${baseSeed}:histPrice:${date}`, -12, 12);
-            return { date, price: Math.max(1, Math.round(base + trend + wave + noise)) };
+        return dates.map((date) => {
+            const price = this.pickInt(`${baseSeed}:histPrice:${date}`, 500, 1800);
+            return { date, price };
         });
     }
     async getCompetitorPrices(req) {

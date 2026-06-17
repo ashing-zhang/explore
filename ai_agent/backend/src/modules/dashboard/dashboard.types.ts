@@ -23,7 +23,6 @@ export type DashboardOverviewResponse = {
             dates: string[];
             hotel: number[];
             regionAvg: number[];
-            lastYear: number[];
         };
     };
     inventoryCalendar: {

@@ -218,7 +218,6 @@ export class DashboardService {
     const dates: string[] = [];
     const hotel: number[] = [];
     const regionAvg: number[] = [];
-    const lastYear: number[] = [];
 
     const base = avg(params.hotelSeries.slice(-7).map((p) => p.price)) || 650;
     for (let i = 0; i < days; i += 1) {
@@ -228,10 +227,9 @@ export class DashboardService {
       const h = hotelMap.get(key) ?? round2(base + i * 2.2);
       hotel.push(round2(h));
       regionAvg.push(round2(h * 0.92 + 18));
-      lastYear.push(round2(h * 0.86 + 25));
     }
 
-    return { dates, hotel, regionAvg, lastYear };
+    return { dates, hotel, regionAvg };
   }
 
   private buildInventoryCalendar(params: {
