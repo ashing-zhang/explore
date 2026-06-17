@@ -230,11 +230,6 @@ export default function Home() {
                         data: overview.charts.otaPriceTrend.regionAvg,
                         color: '#f97316',
                       },
-                      {
-                        name: '去年同期',
-                        data: overview.charts.otaPriceTrend.lastYear,
-                        color: '#22c55e',
-                      },
                     ]}
                   />
                 </div>
