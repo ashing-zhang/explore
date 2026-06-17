@@ -199,7 +199,7 @@ export default function Home() {
               <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <div className="lg:col-span-1">
                   <MultiLineChart
-                    title="订单趋势（间夜）"
+                    title="包房订单趋势（间夜）"
                     dates={overview.charts.orderTrend.dates}
                     series={[
                       {

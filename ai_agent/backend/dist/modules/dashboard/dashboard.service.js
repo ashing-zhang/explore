@@ -68,10 +68,10 @@ function bookingWindowText(params) {
     const deltaPct = (thisTotal - lastTotal) / lastTotal;
     const pctText = `${Math.round(deltaPct * 100)}%`;
     if (deltaPct >= 0.2)
-        return `提前出现（今年较去年 ${pctText}）`;
+        return `提前出现（窗口期内销量今年较去年提升 ${pctText}）`;
     if (deltaPct <= -0.2)
-        return `滞后出现（今年较去年 ${pctText}）`;
-    return `出现情况与去年相似（今年较去年 ${pctText}）`;
+        return `滞后出现（窗口期内销量今年较去年下降 ${pctText}）`;
+    return `销售情况与去年相似`;
 }
 function apiTimingEnabled() {
     return process.env.LOG_API_TIMING === '1';
