@@ -41,8 +41,8 @@ export class AnalyticsService {
   }
 
   computeBookingWindowStatus(orders: HistoricalOrder[], inventory: InventoryStatus): BookingWindowStatus {
-    const remainingRatio = safeRatio(inventory.packageRemaining, inventory.packageTotal);
-    if (remainingRatio <= 0.1) return 'PASSED';
+    const remaining = inventory.packageRemaining;
+    if (remaining <= 5) return 'PASSED';
 
     const last7 = orders.slice(0, 7);
     const last28 = orders.slice(0, 28);
@@ -55,18 +55,15 @@ export class AnalyticsService {
   }
 
   computeInventoryRisk(marketStatus: MarketStatus, inventory: InventoryStatus): InventoryRisk {
-    const remainingRatio = safeRatio(inventory.packageRemaining, inventory.packageTotal);
-    const soldRatio = safeRatio(inventory.packageSold, inventory.packageTotal);
-
-    if (remainingRatio <= 0.05) return 'CRITICAL';
+    const remaining = inventory.packageRemaining;
+    if (remaining <= 5) return 'CRITICAL';
     if (marketStatus === 'HOT' || marketStatus === 'EXTREME_HOT') {
-      if (remainingRatio <= 0.15) return 'HIGH';
-      if (remainingRatio <= 0.25) return 'MEDIUM';
+      if (remaining <= 20) return 'HIGH';
+      if (remaining <= 40) return 'MEDIUM';
       return 'LOW';
     }
-
-    if (soldRatio < 0.35) return 'HIGH';
-    if (soldRatio < 0.55) return 'MEDIUM';
+    if (remaining >= 120) return 'HIGH';
+    if (remaining >= 80) return 'MEDIUM';
     return 'LOW';
   }
 
@@ -78,4 +75,3 @@ export class AnalyticsService {
     return clamp01((marketWeight + windowWeight + riskWeight) / 3);
   }
 }
-

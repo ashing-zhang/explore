@@ -151,42 +151,12 @@ export default function Home() {
             </div>
           ) : overview ? (
             <>
-              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
                 <MetricTile
                   title="包房日期范围"
                   value={rangeText(overview.packageDateRange)}
                   sub={`共 ${overview.packageDateRange.days} 天`}
                   accent="blue"
-                />
-                <MetricTile
-                  title="总库存（间夜）"
-                  value={`${overview.summary.totalInventory}`}
-                  sub={`参考天数：${overview.packageDateRange.days} 天`}
-                  accent="teal"
-                />
-                <MetricTile
-                  title="已售（间夜）"
-                  value={`${overview.summary.soldInventory}`}
-                  sub={`${Math.round(
-                    (overview.summary.soldInventory / Math.max(1, overview.summary.totalInventory)) *
-                    100,
-                  )}%`}
-                  accent="green"
-                />
-                <MetricTile
-                  title="剩余库存（间夜）"
-                  value={`${overview.summary.remainingInventory}`}
-                  sub={`${Math.round(
-                    (overview.summary.remainingInventory /
-                      Math.max(1, overview.summary.totalInventory)) *
-                    100,
-                  )}%`}
-                  accent="purple"
-                />
-                <MetricTile
-                  title="距离入住"
-                  value={`${overview.packageDateRange.daysToCheckIn} 天`}
-                  accent="orange"
                 />
                 <MetricTile
                   title="市场热度"

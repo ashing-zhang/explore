@@ -108,9 +108,9 @@ let DashboardService = DashboardService_1 = class DashboardService {
         const rec = await this.agent.recommendFromInputs(inputs, { allowLlm: false });
         if (enabled)
             this.logger.log(`overview recommend ${(node_perf_hooks_1.performance.now() - recStart).toFixed(1)}ms${tag}`);
-        const totalInventory = inputs.inventory_status.packageTotal;
-        const soldInventory = inputs.inventory_status.packageSold;
         const remainingInventory = inputs.inventory_status.packageRemaining;
+        const totalInventory = remainingInventory;
+        const soldInventory = 0;
         const marketHeatText = mapMarketHeatText(rec.market_status);
         const marketHeatDelta = clamp(Math.round((rec.confidence - 0.6) * 10), -3, 3);
         const orderTrend = this.buildOrderTrend({

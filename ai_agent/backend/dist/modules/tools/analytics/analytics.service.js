@@ -38,8 +38,8 @@ let AnalyticsService = class AnalyticsService {
         return 'NORMAL';
     }
     computeBookingWindowStatus(orders, inventory) {
-        const remainingRatio = safeRatio(inventory.packageRemaining, inventory.packageTotal);
-        if (remainingRatio <= 0.1)
+        const remaining = inventory.packageRemaining;
+        if (remaining <= 5)
             return 'PASSED';
         const last7 = orders.slice(0, 7);
         const last28 = orders.slice(0, 28);
@@ -51,20 +51,19 @@ let AnalyticsService = class AnalyticsService {
         return 'NOT_STARTED';
     }
     computeInventoryRisk(marketStatus, inventory) {
-        const remainingRatio = safeRatio(inventory.packageRemaining, inventory.packageTotal);
-        const soldRatio = safeRatio(inventory.packageSold, inventory.packageTotal);
-        if (remainingRatio <= 0.05)
+        const remaining = inventory.packageRemaining;
+        if (remaining <= 5)
             return 'CRITICAL';
         if (marketStatus === 'HOT' || marketStatus === 'EXTREME_HOT') {
-            if (remainingRatio <= 0.15)
+            if (remaining <= 20)
                 return 'HIGH';
-            if (remainingRatio <= 0.25)
+            if (remaining <= 40)
                 return 'MEDIUM';
             return 'LOW';
         }
-        if (soldRatio < 0.35)
+        if (remaining >= 120)
             return 'HIGH';
-        if (soldRatio < 0.55)
+        if (remaining >= 80)
             return 'MEDIUM';
         return 'LOW';
     }

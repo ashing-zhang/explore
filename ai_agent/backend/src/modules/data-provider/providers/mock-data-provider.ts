@@ -53,12 +53,7 @@ export class MockDataProvider {
     const otaPriceSeries = generateSeries(snapshotDate, 30, 699, 55, 1.2);
     const competitorPriceSeries = generateSeries(snapshotDate, 30, 679, 45, 1.0);
     const inventoryStatus: InventoryStatus = {
-      packageTotal: 200,
-      packageSold: 132,
       packageRemaining: 68,
-      hotelTotal: 120,
-      hotelSold: 84,
-      hotelRemaining: 36,
     };
 
     return {

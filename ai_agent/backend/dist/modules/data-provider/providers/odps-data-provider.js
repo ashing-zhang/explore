@@ -586,21 +586,12 @@ let OdpsDataProvider = class OdpsDataProvider {
             const rows = this.parseBaofangInventoryResult(raw);
             packageRemaining = rows.reduce((sum, row) => sum + Math.max(0, row.day_remain_room), 0);
         }
-        const packageTotal = packageRemaining;
-        const packageSold = 0;
-        const hotelTotal = packageTotal;
-        const hotelSold = 0;
         return {
             snapshotDate,
             otaPriceSeries,
             competitorPriceSeries,
             inventoryStatus: {
-                packageTotal,
-                packageSold,
-                packageRemaining: packageTotal - packageSold,
-                hotelTotal,
-                hotelSold,
-                hotelRemaining: hotelTotal - hotelSold,
+                packageRemaining,
             },
         };
     }

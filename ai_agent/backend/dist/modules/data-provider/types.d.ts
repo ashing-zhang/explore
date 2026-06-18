@@ -2,12 +2,7 @@ export type BookingWindowStatus = 'NOT_STARTED' | 'IN_WINDOW' | 'PASSED';
 export type MarketStatus = 'COLD' | 'NORMAL' | 'HOT' | 'EXTREME_HOT';
 export type InventoryRisk = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type InventoryStatus = {
-    packageTotal: number;
-    packageSold: number;
     packageRemaining: number;
-    hotelTotal: number;
-    hotelSold: number;
-    hotelRemaining: number;
 };
 export type PricePoint = {
     date: string;

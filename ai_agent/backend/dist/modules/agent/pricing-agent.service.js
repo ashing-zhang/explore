@@ -164,13 +164,7 @@ let PricingAgentService = PricingAgentService_1 = class PricingAgentService {
         const inventory_risk = this.analytics.computeInventoryRisk(market_status, inputs.inventory_status);
         const recentCompetitorAvg = avg(inputs.competitor_prices.slice(-7).map((p) => p.price));
         const base = recentCompetitorAvg || avg(inputs.market_snapshot.otaPriceSeries.slice(-7).map((p) => p.price)) || 0;
-        const soldRatio = inputs.inventory_status.packageTotal === 0
-            ? 0
-            : inputs.inventory_status.packageSold / inputs.inventory_status.packageTotal;
-        const remainingRatio = inputs.inventory_status.packageTotal === 0
-            ? 0
-            : inputs.inventory_status.packageRemaining /
-                inputs.inventory_status.packageTotal;
+        const remaining = inputs.inventory_status.packageRemaining;
         const marketDelta = market_status === 'EXTREME_HOT'
             ? 80
             : market_status === 'HOT'
@@ -178,14 +172,14 @@ let PricingAgentService = PricingAgentService_1 = class PricingAgentService {
                 : market_status === 'COLD'
                     ? -40
                     : 0;
-        const inventoryDelta = remainingRatio <= 0.15 ? 30 : remainingRatio >= 0.5 ? -20 : 0;
+        const inventoryDelta = remaining <= 20 ? 30 : remaining >= 120 ? -20 : 0;
         const price = Math.round(Math.max(50, base + marketDelta + inventoryDelta));
-        const strategy = this.pickStrategy(market_status, soldRatio, remainingRatio);
+        const strategy = this.pickStrategy(market_status, remaining);
         const confidence = this.analytics.computeConfidence(market_status, booking_window_status, inventory_risk);
         const reasoning = [
             `market_status=${market_status} based on recent OTA vs historical prices`,
             `booking_window_status=${booking_window_status} based on recent pace and remaining inventory`,
-            `inventory_risk=${inventory_risk} from remaining ratio and market status`,
+            `inventory_risk=${inventory_risk} from remaining inventory and market status`,
             `recommended_price=${price} anchored to recent competitor pricing`,
             `recommended_strategy=${strategy}`,
         ];
@@ -199,14 +193,14 @@ let PricingAgentService = PricingAgentService_1 = class PricingAgentService {
             reasoning,
         };
     }
-    pickStrategy(marketStatus, soldRatio, remainingRatio) {
-        if (remainingRatio <= 0.12 && (marketStatus === 'HOT' || marketStatus === 'EXTREME_HOT')) {
+    pickStrategy(marketStatus, remaining) {
+        if (remaining <= 20 && (marketStatus === 'HOT' || marketStatus === 'EXTREME_HOT')) {
             return 'PRICE_UP';
         }
         if (marketStatus === 'COLD') {
-            return soldRatio < 0.5 ? 'AGGRESSIVE_SELL' : 'PRICE_DOWN';
+            return remaining >= 120 ? 'AGGRESSIVE_SELL' : 'PRICE_DOWN';
         }
-        if (soldRatio < 0.4)
+        if (remaining >= 80)
             return 'PARTIAL_SELL';
         return 'HOLD';
     }
