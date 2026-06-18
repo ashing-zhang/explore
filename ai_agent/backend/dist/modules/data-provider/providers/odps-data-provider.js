@@ -394,6 +394,26 @@ let OdpsDataProvider = class OdpsDataProvider {
         }
         return out;
     }
+    parseBaofangInventoryResult(text) {
+        const lines = text
+            .split(/\r?\n/)
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0);
+        const out = [];
+        for (const line of lines) {
+            const cols = line.includes('\t') ? line.split('\t') : this.parseCsvLine(line);
+            if (cols.length < 2)
+                continue;
+            const start_date = (cols[0] ?? '').trim();
+            if (!start_date || start_date.toLowerCase() === 'start_date')
+                continue;
+            const day_remain_room = Number((cols[1] ?? '').trim());
+            if (!Number.isFinite(day_remain_room))
+                continue;
+            out.push({ start_date, day_remain_room });
+        }
+        return out;
+    }
     async fetchSqlResult(instanceId, taskName) {
         const cfg = this.requireOdpsConfig();
         const tries = [
@@ -545,10 +565,31 @@ let OdpsDataProvider = class OdpsDataProvider {
             const noise = this.pickInt(`${baseSeed}:comp:${date}`, -18, 18);
             return { date, price: Math.max(1, Math.round(anchor * 0.95 + 22 + noise)) };
         });
-        const packageTotal = this.pickInt(`${baseSeed}:inv:packageTotal`, 260, 520);
-        const packageSold = this.pickInt(`${baseSeed}:inv:packageSold`, Math.round(packageTotal * 0.45), Math.round(packageTotal * 0.92));
-        const hotelTotal = this.pickInt(`${baseSeed}:inv:hotelTotal`, 480, 920);
-        const hotelSold = this.pickInt(`${baseSeed}:inv:hotelSold`, Math.round(hotelTotal * 0.35), Math.round(hotelTotal * 0.88));
+        const startDate = req.startDate?.trim() ?? '';
+        const endDate = req.endDate?.trim() ?? '';
+        const hid = req.hid?.trim() ?? '';
+        let packageRemaining = 0;
+        if (hid &&
+            /^\d+$/.test(hid) &&
+            /^\d{4}-\d{2}-\d{2}$/.test(startDate) &&
+            /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            const template = this.loadSqlTemplate('get_baofang_inventory.sql');
+            const sql = this.renderTemplate(template, {
+                hid,
+                start_date: startDate,
+                end_date: endDate,
+            });
+            const taskName = 'get_baofang_inventory';
+            const instanceId = await this.submitSql(sql, taskName);
+            await this.waitInstanceSuccess(instanceId, taskName);
+            const raw = await this.fetchSqlResult(instanceId, taskName);
+            const rows = this.parseBaofangInventoryResult(raw);
+            packageRemaining = rows.reduce((sum, row) => sum + Math.max(0, row.day_remain_room), 0);
+        }
+        const packageTotal = packageRemaining;
+        const packageSold = 0;
+        const hotelTotal = packageTotal;
+        const hotelSold = 0;
         return {
             snapshotDate,
             otaPriceSeries,

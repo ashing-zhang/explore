@@ -19,6 +19,7 @@ export declare class OdpsDataProvider {
     private tryDetectTaskFailure;
     private waitInstanceSuccess;
     private parseOrderComparisonResult;
+    private parseBaofangInventoryResult;
     private fetchSqlResult;
     private odpsConfig;
     private targetDate;
