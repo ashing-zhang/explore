@@ -24,6 +24,9 @@ function lastN(points, n) {
 function clamp01(x) {
     return Math.max(0, Math.min(1, x));
 }
+function totalRemaining(inventory) {
+    return inventory.packageRemaining.reduce((sum, item) => sum + Math.max(0, item.remaining), 0);
+}
 let AnalyticsService = class AnalyticsService {
     computeMarketStatus(market, historicalPrices) {
         const recentOta = avg(lastN(market.otaPriceSeries, 7).map((p) => p.price));
@@ -38,7 +41,7 @@ let AnalyticsService = class AnalyticsService {
         return 'NORMAL';
     }
     computeBookingWindowStatus(orders, inventory) {
-        const remaining = inventory.packageRemaining;
+        const remaining = totalRemaining(inventory);
         if (remaining <= 5)
             return 'PASSED';
         const last7 = orders.slice(0, 7);
@@ -51,7 +54,7 @@ let AnalyticsService = class AnalyticsService {
         return 'NOT_STARTED';
     }
     computeInventoryRisk(marketStatus, inventory) {
-        const remaining = inventory.packageRemaining;
+        const remaining = totalRemaining(inventory);
         if (remaining <= 5)
             return 'CRITICAL';
         if (marketStatus === 'HOT' || marketStatus === 'EXTREME_HOT') {

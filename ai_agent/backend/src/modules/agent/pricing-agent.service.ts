@@ -17,6 +17,13 @@ function avg(xs: number[]): number {
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
+function totalRemaining(inputs: AgentInputs): number {
+  return inputs.inventory_status.packageRemaining.reduce(
+    (sum, item) => sum + Math.max(0, item.remaining),
+    0,
+  );
+}
+
 const AgentOutputsSchema = z.object({
   market_status: z.enum(['COLD', 'NORMAL', 'HOT', 'EXTREME_HOT']),
   booking_window_status: z.enum(['NOT_STARTED', 'IN_WINDOW', 'PASSED']),
@@ -184,7 +191,7 @@ export class PricingAgentService {
     );
     const base = recentCompetitorAvg || avg(inputs.market_snapshot.otaPriceSeries.slice(-7).map((p) => p.price)) || 0;
 
-    const remaining = inputs.inventory_status.packageRemaining;
+    const remaining = totalRemaining(inputs);
 
     const marketDelta =
       market_status === 'EXTREME_HOT'

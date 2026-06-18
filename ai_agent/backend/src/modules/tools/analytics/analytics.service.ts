@@ -27,6 +27,10 @@ function clamp01(x: number): number {
   return Math.max(0, Math.min(1, x));
 }
 
+function totalRemaining(inventory: InventoryStatus): number {
+  return inventory.packageRemaining.reduce((sum, item) => sum + Math.max(0, item.remaining), 0);
+}
+
 @Injectable()
 export class AnalyticsService {
   computeMarketStatus(market: MarketSnapshot, historicalPrices: PricePoint[]): MarketStatus {
@@ -41,7 +45,7 @@ export class AnalyticsService {
   }
 
   computeBookingWindowStatus(orders: HistoricalOrder[], inventory: InventoryStatus): BookingWindowStatus {
-    const remaining = inventory.packageRemaining;
+    const remaining = totalRemaining(inventory);
     if (remaining <= 5) return 'PASSED';
 
     const last7 = orders.slice(0, 7);
@@ -55,7 +59,7 @@ export class AnalyticsService {
   }
 
   computeInventoryRisk(marketStatus: MarketStatus, inventory: InventoryStatus): InventoryRisk {
-    const remaining = inventory.packageRemaining;
+    const remaining = totalRemaining(inventory);
     if (remaining <= 5) return 'CRITICAL';
     if (marketStatus === 'HOT' || marketStatus === 'EXTREME_HOT') {
       if (remaining <= 20) return 'HIGH';

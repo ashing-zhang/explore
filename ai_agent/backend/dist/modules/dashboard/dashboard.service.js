@@ -108,7 +108,7 @@ let DashboardService = DashboardService_1 = class DashboardService {
         const rec = await this.agent.recommendFromInputs(inputs, { allowLlm: false });
         if (enabled)
             this.logger.log(`overview recommend ${(node_perf_hooks_1.performance.now() - recStart).toFixed(1)}ms${tag}`);
-        const remainingInventory = inputs.inventory_status.packageRemaining;
+        const remainingInventory = inputs.inventory_status.packageRemaining.reduce((sum, item) => sum + Math.max(0, item.remaining), 0);
         const totalInventory = remainingInventory;
         const soldInventory = 0;
         const marketHeatText = mapMarketHeatText(rec.market_status);
@@ -139,7 +139,7 @@ let DashboardService = DashboardService_1 = class DashboardService {
         const inventoryCalendar = this.buildInventoryCalendar({
             startDate: start,
             endDate: end,
-            totalRemaining: remainingInventory,
+            dailyRemaining: inputs.inventory_status.packageRemaining,
         });
         const aiSuggestions = this.buildAiSuggestions({
             dataDate,
@@ -240,34 +240,20 @@ let DashboardService = DashboardService_1 = class DashboardService {
     }
     buildInventoryCalendar(params) {
         const days = Math.max(1, daysBetween(params.startDate, params.endDate) + 1);
-        const base = Math.max(1, Math.floor(params.totalRemaining / days));
-        const daily = Array.from({ length: days }, (_, i) => {
-            const wave = Math.sin(i / 3) * 1.2;
-            return clamp(Math.round(base + wave), 1, Math.max(1, base + 2));
+        const remainingMap = new Map(params.dailyRemaining.map((item) => [item.date, Math.max(0, item.remaining)]));
+        const dailyRemaining = Array.from({ length: days }, (_, i) => {
+            const date = toIsoDate(addDays(params.startDate, i));
+            return {
+                date,
+                remaining: remainingMap.get(date) ?? 0,
+            };
         });
-        let sum = daily.reduce((a, b) => a + b, 0);
-        let idx = 0;
-        while (sum !== params.totalRemaining && idx < days * 20) {
-            const i = idx % days;
-            if (sum < params.totalRemaining) {
-                daily[i] += 1;
-                sum += 1;
-            }
-            else if (sum > params.totalRemaining && daily[i] > 1) {
-                daily[i] -= 1;
-                sum -= 1;
-            }
-            idx += 1;
-        }
-        const dailyRemaining = daily.map((remaining, i) => ({
-            date: toIsoDate(addDays(params.startDate, i)),
-            remaining,
-        }));
+        const totalRemaining = dailyRemaining.reduce((sum, item) => sum + item.remaining, 0);
         return {
             startDate: toIsoDate(params.startDate),
             endDate: toIsoDate(params.endDate),
             dailyRemaining,
-            totalRemaining: params.totalRemaining,
+            totalRemaining,
         };
     }
     buildAiSuggestions(params) {

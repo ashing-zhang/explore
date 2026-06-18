@@ -52,8 +52,14 @@ export class MockDataProvider {
     const snapshotDate = req.targetDate ? new Date(req.targetDate) : new Date();
     const otaPriceSeries = generateSeries(snapshotDate, 30, 699, 55, 1.2);
     const competitorPriceSeries = generateSeries(snapshotDate, 30, 679, 45, 1.0);
+    const startDate = req.startDate ? new Date(req.startDate) : addDays(snapshotDate, 7);
+    const endDate = req.endDate ? new Date(req.endDate) : addDays(startDate, 14);
+    const days = Math.max(1, daysBetween(startDate, endDate) + 1);
     const inventoryStatus: InventoryStatus = {
-      packageRemaining: 68,
+      packageRemaining: Array.from({ length: days }, (_, i) => ({
+        date: toIsoDate(addDays(startDate, i)),
+        remaining: Math.max(0, 4 + Math.round(Math.sin(i / 3) * 2) + ((i * 7) % 3)),
+      })),
     };
 
     return {

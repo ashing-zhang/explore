@@ -568,7 +568,7 @@ let OdpsDataProvider = class OdpsDataProvider {
         const startDate = req.startDate?.trim() ?? '';
         const endDate = req.endDate?.trim() ?? '';
         const hid = req.hid?.trim() ?? '';
-        let packageRemaining = 0;
+        let packageRemaining = [];
         if (hid &&
             /^\d+$/.test(hid) &&
             /^\d{4}-\d{2}-\d{2}$/.test(startDate) &&
@@ -584,7 +584,10 @@ let OdpsDataProvider = class OdpsDataProvider {
             await this.waitInstanceSuccess(instanceId, taskName);
             const raw = await this.fetchSqlResult(instanceId, taskName);
             const rows = this.parseBaofangInventoryResult(raw);
-            packageRemaining = rows.reduce((sum, row) => sum + Math.max(0, row.day_remain_room), 0);
+            packageRemaining = rows.map((row) => ({
+                date: row.start_date,
+                remaining: Math.max(0, row.day_remain_room),
+            }));
         }
         return {
             snapshotDate,

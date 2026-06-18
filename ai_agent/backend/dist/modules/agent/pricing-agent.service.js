@@ -26,6 +26,9 @@ function avg(xs) {
         return 0;
     return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
+function totalRemaining(inputs) {
+    return inputs.inventory_status.packageRemaining.reduce((sum, item) => sum + Math.max(0, item.remaining), 0);
+}
 const AgentOutputsSchema = zod_1.z.object({
     market_status: zod_1.z.enum(['COLD', 'NORMAL', 'HOT', 'EXTREME_HOT']),
     booking_window_status: zod_1.z.enum(['NOT_STARTED', 'IN_WINDOW', 'PASSED']),
@@ -164,7 +167,7 @@ let PricingAgentService = PricingAgentService_1 = class PricingAgentService {
         const inventory_risk = this.analytics.computeInventoryRisk(market_status, inputs.inventory_status);
         const recentCompetitorAvg = avg(inputs.competitor_prices.slice(-7).map((p) => p.price));
         const base = recentCompetitorAvg || avg(inputs.market_snapshot.otaPriceSeries.slice(-7).map((p) => p.price)) || 0;
-        const remaining = inputs.inventory_status.packageRemaining;
+        const remaining = totalRemaining(inputs);
         const marketDelta = market_status === 'EXTREME_HOT'
             ? 80
             : market_status === 'HOT'
