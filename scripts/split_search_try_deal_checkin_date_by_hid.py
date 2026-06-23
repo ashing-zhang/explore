@@ -1,14 +1,14 @@
 """
 运行指南：
     请在项目根目录下以模块方式运行：
-    python -m scripts.split_search_try_deal_by_hid
+    python -m scripts.split_search_try_deal_checkin_date_by_hid
 
 输出说明：
-    - 读取 data/search_try_deal.csv
-    - 输出 data/search_try_deal_by_hid/unique_hids.csv
-    - 输出 data/search_try_deal_by_hid/{hid}.csv
-    - 每个 hid 文件按预定日期升序排序
-    - 针对 20260422 至 20260622 的缺失日期自动补齐空记录
+    - 读取 data/search_try_deal_checkin_date.csv
+    - 按 hid 拆分并输出到 data/search_try_deal_checkin_date_by_hid/{hid}.csv
+    - 每个 hid 文件按 checkin_date 升序排序
+    - 针对 2026-04-22 至 2026-06-22 的缺失 checkin_date 自动补齐记录
+      （search_quantity、try_quantity、order_quantity 填充为空）
 """
 
 from __future__ import annotations
@@ -25,8 +25,8 @@ from typing import Iterable
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-NULL_TOKENS = {"", r"\N"}
 ENCODING_CANDIDATES = ("utf-8-sig", "utf-8", "gb18030", "gbk")
+NULL_TOKENS = {"", r"\N"}
 Row = dict[str, str]
 
 
@@ -39,20 +39,20 @@ class SplitConfig:
     date_start: date
     date_end: date
     group_column_candidates: tuple[str, ...]
-    booking_date_column: str
+    checkin_date_column: str
     fill_empty_columns: tuple[str, ...]
 
 
 def build_default_config(project_root: Path) -> SplitConfig:
-    """Build the default configuration for the split task."""
+    """Build the default configuration for the checkin_date split task."""
     return SplitConfig(
         input_csv=project_root / "data" / "search_try_deal_checkin_date.csv",
         output_dir=project_root / "data" / "search_try_deal_checkin_date_by_hid",
         date_start=date(2026, 4, 22),
         date_end=date(2026, 6, 22),
         group_column_candidates=("hid", "id"),
-        booking_date_column="checkin_date",
-        fill_empty_columns=("查价数", "试单数", "订单数"),
+        checkin_date_column="checkin_date",
+        fill_empty_columns=("search_quantity", "try_quantity", "order_quantity"),
     )
 
 
@@ -114,20 +114,41 @@ def ensure_required_columns(fieldnames: Iterable[str], required_columns: Iterabl
         raise ValueError(f"CSV missing required columns: {missing_columns}")
 
 
-def parse_booking_date(value: str, column_name: str) -> date:
-    """Parse a booking date from YYYYMMDD format."""
+def parse_checkin_date(value: str, column_name: str) -> date:
+    """Parse checkin_date from common formats such as YYYY/M/D, YYYY-MM-DD, YYYYMMDD."""
     normalized = normalize_cell(value)
     if not normalized:
-        raise ValueError(f"Empty booking date in column: {column_name}")
+        raise ValueError(f"Empty date in column: {column_name}")
+
+    s = normalized.strip().strip('"').strip("'")
+    s = s.replace("\\", "/").replace("-", "/")
+    if " " in s:
+        s = s.split(" ", 1)[0]
+
+    digits_only = re.fullmatch(r"\d{8}", s)
+    if digits_only:
+        try:
+            return datetime.strptime(s, "%Y%m%d").date()
+        except ValueError as exc:
+            raise ValueError(f"Invalid date '{value}' in column '{column_name}'") from exc
+
+    parts = s.split("/")
+    if len(parts) == 3 and all(p.isdigit() for p in parts):
+        y, m, d = (int(parts[0]), int(parts[1]), int(parts[2]))
+        try:
+            return date(y, m, d)
+        except ValueError as exc:
+            raise ValueError(f"Invalid date '{value}' in column '{column_name}'") from exc
+
     try:
-        return datetime.strptime(normalized, "%Y%m%d").date()
+        return datetime.fromisoformat(s).date()
     except ValueError as exc:
-        raise ValueError(f"Invalid booking date '{value}' in column '{column_name}'") from exc
+        raise ValueError(f"Invalid date '{value}' in column '{column_name}'") from exc
 
 
-def format_booking_date(value: date) -> str:
-    """Format a booking date as YYYYMMDD."""
-    return value.strftime("%Y%m%d")
+def format_checkin_date(value: date) -> str:
+    """Format checkin_date as YYYY/M/D to match the source file style."""
+    return f"{value.year}/{value.month}/{value.day}"
 
 
 def iterate_dates(start_date: date, end_date: date) -> Iterable[date]:
@@ -139,7 +160,7 @@ def iterate_dates(start_date: date, end_date: date) -> Iterable[date]:
 
 
 def split_rows_by_group(rows: Iterable[Row], group_column: str) -> dict[str, list[Row]]:
-    """Group rows by the configured group column."""
+    """Group rows by the given group column."""
     grouped_rows: dict[str, list[Row]] = {}
     skipped_rows = 0
     for row in rows:
@@ -169,16 +190,16 @@ def sort_and_fill_group_rows(
     config: SplitConfig,
     group_column: str,
 ) -> list[Row]:
-    """Sort one group's rows by date and add missing dates in the configured range."""
+    """Sort one group's rows by checkin_date and add missing dates in the configured range."""
     dated_rows: list[tuple[date, Row]] = []
     skipped_rows = 0
     for row in rows:
         try:
-            booking_date = parse_booking_date(row.get(config.booking_date_column, ""), config.booking_date_column)
+            d = parse_checkin_date(row.get(config.checkin_date_column, ""), config.checkin_date_column)
         except ValueError:
             skipped_rows += 1
             continue
-        dated_rows.append((booking_date, row))
+        dated_rows.append((d, row))
 
     if skipped_rows:
         group_value = normalize_cell(rows[0].get(group_column))
@@ -189,7 +210,7 @@ def sort_and_fill_group_rows(
         return []
 
     sample_row = dated_rows[0][1]
-    existing_dates = {booking_date for booking_date, _ in dated_rows}
+    existing_dates = {d for d, _ in dated_rows}
     filled_rows = [row.copy() for _, row in dated_rows]
     template = build_fill_template(fieldnames, sample_row, group_column)
 
@@ -197,17 +218,14 @@ def sort_and_fill_group_rows(
         if missing_date in existing_dates:
             continue
         filled_row = template.copy()
-        filled_row[config.booking_date_column] = format_booking_date(missing_date)
+        filled_row[config.checkin_date_column] = format_checkin_date(missing_date)
         for column_name in config.fill_empty_columns:
             if column_name in filled_row:
                 filled_row[column_name] = ""
         filled_rows.append(filled_row)
 
     filled_rows.sort(
-        key=lambda row: (
-            parse_booking_date(row.get(config.booking_date_column, ""), config.booking_date_column),
-            0 if normalize_cell(row.get("查价数")) else 1,
-        )
+        key=lambda row: parse_checkin_date(row.get(config.checkin_date_column, ""), config.checkin_date_column)
     )
     return filled_rows
 
@@ -227,14 +245,6 @@ def write_csv(csv_path: Path, fieldnames: list[str], rows: Iterable[Row], encodi
             writer.writerow({fieldname: normalize_cell(row.get(fieldname)) for fieldname in fieldnames})
 
 
-def write_unique_groups(output_dir: Path, group_column: str, group_values: Iterable[str], encoding: str) -> None:
-    """Write the unique group values to a CSV file."""
-    unique_csv_path = output_dir / f"unique_{group_column}s.csv"
-    rows = [{group_column: group_value} for group_value in sorted(set(group_values))]
-    write_csv(unique_csv_path, [group_column], rows, encoding)
-    logger.info("Saved unique group list: %s", unique_csv_path)
-
-
 def process_split_task(config: SplitConfig) -> None:
     """Run the full split, sort, and fill workflow."""
     if not config.input_csv.exists():
@@ -247,13 +257,12 @@ def process_split_task(config: SplitConfig) -> None:
     group_column = resolve_group_column(fieldnames, config.group_column_candidates)
     ensure_required_columns(
         fieldnames,
-        [group_column, config.booking_date_column, *config.fill_empty_columns],
+        [group_column, config.checkin_date_column, *config.fill_empty_columns],
     )
 
     grouped_rows = split_rows_by_group(rows, group_column)
     logger.info("Resolved group column: %s", group_column)
     logger.info("Found %s unique %s values.", len(grouped_rows), group_column)
-    write_unique_groups(config.output_dir, group_column, grouped_rows.keys(), encoding)
 
     for group_value, group_rows in sorted(grouped_rows.items()):
         output_path = config.output_dir / f"{build_safe_file_name(group_value)}.csv"
@@ -272,3 +281,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
