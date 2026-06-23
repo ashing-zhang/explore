@@ -1,0 +1,2 @@
+在scripts目录中添加Python脚本，以针对search_try_deal_event_social目录中的每个csv文件分别绘制折线图并保存在order_time_search_try_deal_plots目录中，具体要求如下：
+横轴为booking_date、纵轴为quantity（包含了search_quantity、try_quantity和order_quantity等三条折线）
