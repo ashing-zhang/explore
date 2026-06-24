@@ -59,8 +59,8 @@ export type DashboardOverviewResponse = {
     };
     otaPriceTrend: {
       dates: string[];
-      hotel: number[];
-      regionAvg: number[];
+      platform: number[];
+      otaCompetitor: number[];
     };
   };
   inventoryCalendar: {

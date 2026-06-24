@@ -187,17 +187,17 @@ export default function Home() {
                 </div>
                 <div className="lg:col-span-1">
                   <MultiLineChart
-                    title="OTA 价格趋势（平均价 CNY）"
+                    title="本平台价格和OTA价格比较"
                     dates={overview.charts.otaPriceTrend.dates}
                     series={[
                       {
-                        name: '本酒店',
-                        data: overview.charts.otaPriceTrend.hotel,
+                        name: '本平台',
+                        data: overview.charts.otaPriceTrend.platform,
                         color: '#3b82f6',
                       },
                       {
-                        name: '区域平均',
-                        data: overview.charts.otaPriceTrend.regionAvg,
+                        name: 'OTA竞对',
+                        data: overview.charts.otaPriceTrend.otaCompetitor,
                         color: '#f97316',
                       },
                     ]}

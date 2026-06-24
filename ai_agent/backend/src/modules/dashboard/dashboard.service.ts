@@ -31,11 +31,6 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function avg(xs: number[]): number {
-  if (xs.length === 0) return 0;
-  return xs.reduce((a, b) => a + b, 0) / xs.length;
-}
-
 function mapMarketHeatText(marketStatus: string): string {
   if (marketStatus === 'COLD') return '一般偏冷';
   if (marketStatus === 'HOT') return '偏热';
@@ -142,7 +137,8 @@ export class DashboardService {
     const otaPriceTrend = this.buildOtaPriceTrend({
       startDate: start,
       endDate: end,
-      hotelSeries: inputs.market_snapshot.otaPriceSeries,
+      platformSeries: inputs.market_snapshot.otaPriceSeries,
+      otaCompetitorSeries: inputs.market_snapshot.competitorPriceSeries,
     });
 
     const inventoryCalendar = this.buildInventoryCalendar({
@@ -241,27 +237,32 @@ export class DashboardService {
   private buildOtaPriceTrend(params: {
     startDate: Date;
     endDate: Date;
-    hotelSeries: { date: string; price: number }[];
+    platformSeries: { date: string; price: number }[];
+    otaCompetitorSeries: { date: string; price: number }[];
   }): DashboardOverviewResponse['charts']['otaPriceTrend'] {
     const start = params.startDate;
     const days = Math.max(1, daysBetween(params.startDate, params.endDate) + 1);
-    const hotelMap = new Map(params.hotelSeries.map((p) => [p.date, p.price] as const));
+    const platformMap = new Map(params.platformSeries.map((p) => [p.date, p.price] as const));
+    const competitorMap = new Map(
+      params.otaCompetitorSeries.map((p) => [p.date, p.price] as const),
+    );
 
     const dates: string[] = [];
-    const hotel: number[] = [];
-    const regionAvg: number[] = [];
-
-    const base = avg(params.hotelSeries.slice(-7).map((p) => p.price)) || 650;
+    const platform: number[] = [];
+    const otaCompetitor: number[] = [];
+    const randInt = (min: number, max: number): number =>
+      min + Math.floor(Math.random() * (max - min + 1));
     for (let i = 0; i < days; i += 1) {
       const d = addDays(start, i);
       const key = toIsoDate(d);
       dates.push(key);
-      const h = hotelMap.get(key) ?? round2(base + i * 2.2);
-      hotel.push(round2(h));
-      regionAvg.push(round2(h * 0.92 + 18));
+      const p = platformMap.get(key) ?? randInt(560, 820);
+      const c = competitorMap.get(key) ?? randInt(560, 820);
+      platform.push(round2(p));
+      otaCompetitor.push(round2(c));
     }
 
-    return { dates, hotel, regionAvg };
+    return { dates, platform, otaCompetitor };
   }
 
   private buildInventoryCalendar(params: {
