@@ -620,16 +620,16 @@ export class OdpsDataProvider {
     const baseSeed = this.seedBase(req);
     const dates = this.buildDateSeries(snapshotDate, 30);
 
-    const base = this.pickInt(`${baseSeed}:basePrice`, 560, 820);
-    const otaPriceSeries: PricePoint[] = dates.map((date, idx) => {
-      const drift = idx * 1.9;
-      const wave = Math.round(Math.sin(idx / 4) * 14);
-      const noise = this.pickInt(`${baseSeed}:ota:${date}`, -10, 10);
-      return { date, price: Math.round(base + drift + wave + noise) };
+    const otaMin = 560;
+    const otaMax = 820;
+    const otaPriceSeries: PricePoint[] = dates.map((date) => {
+      const span = otaMax - otaMin + 1;
+      const price = otaMin + Math.floor(Math.random() * span);
+      return { date, price };
     });
 
     const competitorPriceSeries: PricePoint[] = dates.map((date, idx) => {
-      const anchor = otaPriceSeries[idx]?.price ?? base;
+      const anchor = otaPriceSeries[idx]?.price ?? otaMin;
       const noise = this.pickInt(`${baseSeed}:comp:${date}`, -18, 18);
       return { date, price: Math.max(1, Math.round(anchor * 0.95 + 22 + noise)) };
     });
