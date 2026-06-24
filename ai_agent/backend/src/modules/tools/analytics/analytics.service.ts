@@ -34,7 +34,7 @@ function totalRemaining(inventory: InventoryStatus): number {
 @Injectable()
 export class AnalyticsService {
   computeMarketStatus(market: MarketSnapshot, historicalPrices: PricePoint[]): MarketStatus {
-    const recentOta = avg(lastN(market.otaPriceSeries, 7).map((p) => p.price));
+    const recentOta = avg(lastN(market.priceSeries, 7).map((p) => p.price));
     const baseHist = avg(lastN(historicalPrices, 60).map((p) => p.price));
     const ratio = safeRatio(recentOta, baseHist || recentOta || 1);
 

@@ -29,7 +29,7 @@ function totalRemaining(inventory) {
 }
 let AnalyticsService = class AnalyticsService {
     computeMarketStatus(market, historicalPrices) {
-        const recentOta = avg(lastN(market.otaPriceSeries, 7).map((p) => p.price));
+        const recentOta = avg(lastN(market.priceSeries, 7).map((p) => p.price));
         const baseHist = avg(lastN(historicalPrices, 60).map((p) => p.price));
         const ratio = safeRatio(recentOta, baseHist || recentOta || 1);
         if (ratio >= 1.18)

@@ -13,7 +13,7 @@ export type PricePoint = {
 };
 export type MarketSnapshot = {
     snapshotDate: string;
-    otaPriceSeries: PricePoint[];
+    priceSeries: PricePoint[];
     competitorPriceSeries: PricePoint[];
     inventoryStatus: InventoryStatus;
 };

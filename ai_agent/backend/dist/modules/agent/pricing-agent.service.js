@@ -166,7 +166,7 @@ let PricingAgentService = PricingAgentService_1 = class PricingAgentService {
         const booking_window_status = this.analytics.computeBookingWindowStatus(inputs.historical_orders, inputs.inventory_status);
         const inventory_risk = this.analytics.computeInventoryRisk(market_status, inputs.inventory_status);
         const recentCompetitorAvg = avg(inputs.competitor_prices.slice(-7).map((p) => p.price));
-        const base = recentCompetitorAvg || avg(inputs.market_snapshot.otaPriceSeries.slice(-7).map((p) => p.price)) || 0;
+        const base = recentCompetitorAvg || avg(inputs.market_snapshot.priceSeries.slice(-7).map((p) => p.price)) || 0;
         const remaining = totalRemaining(inputs);
         const marketDelta = market_status === 'EXTREME_HOT'
             ? 80

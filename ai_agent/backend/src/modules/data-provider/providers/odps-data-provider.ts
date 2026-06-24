@@ -622,14 +622,14 @@ export class OdpsDataProvider {
 
     const otaMin = 560;
     const otaMax = 820;
-    const otaPriceSeries: PricePoint[] = dates.map((date) => {
+    const priceSeries: PricePoint[] = dates.map((date) => {
       const span = otaMax - otaMin + 1;
       const price = otaMin + Math.floor(Math.random() * span);
       return { date, price };
     });
 
     const competitorPriceSeries: PricePoint[] = dates.map((date, idx) => {
-      const anchor = otaPriceSeries[idx]?.price ?? otaMin;
+      const anchor = priceSeries[idx]?.price ?? otaMin;
       const noise = this.pickInt(`${baseSeed}:comp:${date}`, -18, 18);
       return { date, price: Math.max(1, Math.round(anchor * 0.95 + 22 + noise)) };
     });
@@ -663,7 +663,7 @@ export class OdpsDataProvider {
 
     return {
       snapshotDate,
-      otaPriceSeries,
+      priceSeries,
       competitorPriceSeries,
       inventoryStatus: {
         packageRemaining,

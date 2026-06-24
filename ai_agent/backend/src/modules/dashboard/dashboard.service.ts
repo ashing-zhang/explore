@@ -137,7 +137,7 @@ export class DashboardService {
     const otaPriceTrend = this.buildOtaPriceTrend({
       startDate: start,
       endDate: end,
-      platformSeries: inputs.market_snapshot.otaPriceSeries,
+      platformSeries: inputs.market_snapshot.priceSeries,
       otaCompetitorSeries: inputs.market_snapshot.competitorPriceSeries,
     });
 

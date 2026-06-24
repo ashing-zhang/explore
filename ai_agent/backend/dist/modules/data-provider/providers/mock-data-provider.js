@@ -39,7 +39,7 @@ function generateSeries(endDate, days, base, volatility, slopePerDay) {
 let MockDataProvider = class MockDataProvider {
     async getMarketSnapshot(req) {
         const snapshotDate = req.targetDate ? new Date(req.targetDate) : new Date();
-        const otaPriceSeries = generateSeries(snapshotDate, 30, 699, 55, 1.2);
+        const priceSeries = generateSeries(snapshotDate, 30, 699, 55, 1.2);
         const competitorPriceSeries = generateSeries(snapshotDate, 30, 679, 45, 1.0);
         const startDate = req.startDate ? new Date(req.startDate) : addDays(snapshotDate, 7);
         const endDate = req.endDate ? new Date(req.endDate) : addDays(startDate, 14);
@@ -52,7 +52,7 @@ let MockDataProvider = class MockDataProvider {
         };
         return {
             snapshotDate: toIsoDate(snapshotDate),
-            otaPriceSeries,
+            priceSeries,
             competitorPriceSeries,
             inventoryStatus,
         };
